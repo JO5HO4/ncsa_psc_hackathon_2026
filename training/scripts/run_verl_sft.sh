@@ -29,6 +29,9 @@ SAVE_FREQ="${SAVE_FREQ:--1}"
 TEST_FREQ="${TEST_FREQ:--1}"
 RESUME_MODE="${RESUME_MODE:-auto}"
 MAX_CKPT_TO_KEEP="${MAX_CKPT_TO_KEEP:-null}"
+# Convert the final raw FSDP checkpoint into a normal Hugging Face model after
+# training. This also handles the default LoRA setup correctly.
+EXPORT_FOR_INFERENCE="${EXPORT_FOR_INFERENCE:-true}"
 MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
 ENGINE_MODEL_DTYPE="${ENGINE_MODEL_DTYPE:-fp32}"
 ENGINE_USE_TORCH_COMPILE="${ENGINE_USE_TORCH_COMPILE:-true}"
@@ -68,3 +71,21 @@ torchrun --standalone --nnodes=1 --nproc_per_node="$NPROC_PER_NODE" --master_add
   trainer.max_ckpt_to_keep="$MAX_CKPT_TO_KEEP" \
   trainer.resume_mode="$RESUME_MODE" \
   "$@"
+
+if [[ "$EXPORT_FOR_INFERENCE" == "true" ]]; then
+  tracker="$SAVE_DIR/latest_checkpointed_iteration.txt"
+  if [[ ! -r "$tracker" ]]; then
+    echo "No checkpoint tracker found at $tracker; skipping inference export." >&2
+    exit 1
+  fi
+  read -r last_step < "$tracker"
+  if [[ ! "$last_step" =~ ^[0-9]+$ ]]; then
+    echo "Invalid checkpoint step in $tracker: $last_step" >&2
+    exit 1
+  fi
+  checkpoint_dir="$SAVE_DIR/global_step_$last_step"
+  python -m verl.model_merger merge \
+    --backend fsdp \
+    --local_dir "$checkpoint_dir" \
+    --target_dir "$checkpoint_dir/huggingface"
+fi

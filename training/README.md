@@ -11,6 +11,9 @@ expected by verl; `verl_dataset.py` decodes its stored tool definitions.
 
 The SFT script is a useful baseline and a template for the dataset that the
 hackathon creates. It writes checkpoints under `artifacts/checkpoints/sft/`.
+After training, it converts the final checkpoint to a `huggingface/` directory
+that can be passed directly (or via its parent checkpoint directory) to the
+scripts in [`inference/`](../inference/README.md).
 
 The RL launcher is also retained, but is intentionally not runnable yet: it
 needs the future RL task parquet and the reward function based on the TReX

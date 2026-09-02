@@ -1,0 +1,10 @@
+[
+  {
+    "id": "fit-definition",
+    "prompt": "Explain what a likelihood fit does in one sentence."
+  },
+  {
+    "id": "config-comment",
+    "prompt": "Write one concise comment suitable for a TRExFitter .config file describing a signal sample."
+  }
+]

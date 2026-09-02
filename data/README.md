@@ -16,6 +16,33 @@ The first starting config is `trex_config/fixtures/hyy/hyy.config`. It is a work
 
 Write new tasks as JSON records using `trex_config/schema/`. Do not create training Parquet files by hand; the training code will create them later.
 
+## Dataset publishing convention
+
+Treat a Hugging Face dataset repository as the canonical home for every
+reviewed dataset we create: config tasks, SFT records, RL prompts, held-out
+evaluation tasks, and inference prompt sets. Keep only schemas, small examples,
+and download scripts in this Git repository. Large or generated dataset files
+should be published to the Hub and fetched by dataset ID and revision.
+
+For inference, a Hub dataset can use any string prompt column; pass its name to
+`inference/run_prompts.py --prompt-field`. The dataset's README should state
+the schema, splits, source fixture version, intended use, and immutable commit
+or tag to use for evaluations.
+
+When a reviewed local split is ready, publish it with a logged-in Hugging Face
+account instead of committing it here:
+
+```bash
+python data/publish_dataset.py \
+  --source data/trex_config/splits/train.jsonl \
+  --repo-id ho22joshua/trex-config-tasks \
+  --split train
+```
+
+Run the command once for each split. It accepts `.json`, `.jsonl`, and
+`.parquet`; use `--config-name` when one dataset repository hosts multiple
+schemas.
+
 ## ATLAS Open Data
 
 Use `fetch_atlas_opendata.sh` to download complete Open Data skims directly
