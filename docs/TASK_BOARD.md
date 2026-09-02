@@ -10,6 +10,12 @@ Pick one area and put an owner next to each task.
 - [ ] Make a few broken versions: missing sample, bad region, bad setting, and so on.
 - [ ] Split tasks into training, validation, and final test sets.
 
+## TRExFitter Histogramming
+
+- [ ] TRExFitter histogramming is very slow; need some other backend to handle histogramming
+- [ ] Start with a dataset that is already histogrammed
+- [ ] Modify TRExFitter to return a success/fail based on usability of the config file
+
 ## Checking and running configs
 
 - [ ] Decide what “valid config” means for the first version.
@@ -19,12 +25,12 @@ Pick one area and put an owner next to each task.
 - [ ] Add clear error messages, time limits, and saved logs.
 
 ## SFT Dataset
-- [ ] Decide on a standardized format of data and required fields
+- [ ] (Joshua + Chengxi) Decide on a standardized format of data and required fields
+- [ ] (Chengxi) Generate SFT dataset from TRExFitter documentation, frame it as operational question/answers pairs in the context of Hyy https://trexfitter-docs.web.cern.ch/trexfitter-docs/latest/settings/
+- [ ] (Joshua) Open Data documentation https://opendata.atlas.cern/docs/data/for_education/13TeV25_details
+- [ ] (Dongwon) Opening root files and interacting with the objects inside (understand what is inside, the variables, summarize into natural language output)
 - [ ] Create some sort of verifier for the dataset
-- [ ] Generate SFT dataset from TRExFitter documentation, frame it as operational question/answers pairs in the context of Hyy https://trexfitter-docs.web.cern.ch/trexfitter-docs/latest/settings/
-- [ ] Open Data documentation https://opendata.atlas.cern/docs/data/for_education/13TeV25_details
 - [ ] Trajectory dataset (e.g. asking model to run trex fitter as a tool call, ask model to extract the significance given some trex fitter artifacts)
-- [ ] Opening root files and interacting with the objects inside (understand what is inside, the variables, summarize into natural language output)
 - [ ] Long horizon tasks as a combination of all other datasets (start from reading root file, write config, run and execute config, interpret results) --> eventually use in RL
 
 ## Physics rewards from a fit
@@ -42,15 +48,16 @@ A reward is the number used to tell the model whether one finished config is bet
 - [ ] Decide which reward parts are used for training and which are only reported to people.
 
 ## Training and testing models
-
+(Joshua)
+- [ ] Make sure that the model outputs are usable by an agentic harness (codex, opencode)
 - [ ] Turn the JSON task records into the format verl needs.
 - [ ] Make one simple command to train a small model with SFT.
 - [ ] Test the model on the held-out tasks.
 - [ ] Report patch success, config validity, and TRExFitter run success.
 - [ ] Only after SFT works, add RL scoring based on the final config result.
 
-## Training benchmarking
-
+## Training benchmarking 
+(Joshua)
 - [ ] Test untrained small language model without any context
 - [ ] Test untrained small language model with some additional context
 - [ ] Test small language model after RL/SFT
