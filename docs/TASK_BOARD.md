@@ -40,6 +40,14 @@ A reward is the number used to tell the model whether one finished config is bet
 - [ ] Report patch success, config validity, and TRExFitter run success.
 - [ ] Only after SFT works, add RL scoring based on the final config result.
 
+## Training benchmarking
+
+- [ ] Test untrained small language model without any context
+- [ ] Test untrained small language model with some additional context
+- [ ] Test small language model after RL/SFT
+- [ ] Test SOTA model without any context
+- [ ] Test SOTA models with additional context
+
 ## Harbor data — later
 
 - [ ] Add the Harbor export under `data/harbor/`.
