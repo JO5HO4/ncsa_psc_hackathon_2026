@@ -1,0 +1,12 @@
+# Python caches
+__pycache__/
+*.pyc
+
+# Generated artifacts
+artifacts/
+trex_fitter/workspaces/
+trex_fitter/hyy/
+trex_fitter/inputs/Data/
+trex_fitter/inputs/MC/
+data/trex_config/generated/
+data/trex_config/splits/

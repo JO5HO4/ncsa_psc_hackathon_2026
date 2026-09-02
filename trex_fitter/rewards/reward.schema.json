@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRExFitter reward report",
+  "description": "One evaluator-owned reward report for one finished config.",
+  "type": "object",
+  "required": ["schema_version", "task_id", "total", "components", "metrics", "artifacts"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "task_id": {"type": "string"},
+    "total": {"type": "number"},
+    "components": {
+      "type": "object",
+      "required": ["execution", "fit_health", "physics_goal", "stability", "complexity"],
+      "properties": {
+        "execution": {"type": "number"},
+        "fit_health": {"type": "number"},
+        "physics_goal": {"type": "number"},
+        "stability": {"type": "number"},
+        "complexity": {"type": "number"}
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "run_success": {"type": "boolean"},
+        "returncode": {"type": "integer"},
+        "observed_significance": {"type": ["number", "null"]},
+        "expected_significance": {"type": ["number", "null"]},
+        "mu_hat": {"type": ["number", "null"]},
+        "mu_uncertainty": {"type": ["number", "null"]},
+        "minuit_status": {"type": ["integer", "null"]},
+        "hessian_status": {"type": ["integer", "null"]},
+        "goodness_of_fit_probability": {"type": ["number", "null"]},
+        "max_nuisance_pull": {"type": ["number", "null"]},
+        "max_correlation": {"type": ["number", "null"]},
+        "config_change_size": {"type": ["integer", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "notes": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

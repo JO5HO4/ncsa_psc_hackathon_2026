@@ -1,0 +1,9 @@
+[submodule "verl"]
+	path = verl
+	url = https://github.com/volcengine/verl.git
+[submodule "data/reference/hep-config-sft"]
+	path = data/reference/hep-config-sft
+	url = https://huggingface.co/datasets/ho22joshua/hep-config-sft
+[submodule "data/reference/hep-signature-backgrounds"]
+	path = data/reference/hep-signature-backgrounds
+	url = https://huggingface.co/datasets/ho22joshua/hep-signature-backgrounds
