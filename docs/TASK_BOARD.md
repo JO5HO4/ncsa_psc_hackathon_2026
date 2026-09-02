@@ -18,6 +18,15 @@ Pick one area and put an owner next to each task.
 - [ ] Make one command that takes a finished config and returns whether it worked and its significance.
 - [ ] Add clear error messages, time limits, and saved logs.
 
+## SFT Dataset
+- [ ] Decide on a standardized format of data and required fields
+- [ ] Create some sort of verifier for the dataset
+- [ ] Generate SFT dataset from TRExFitter documentation, frame it as operational question/answers pairs in the context of Hyy https://trexfitter-docs.web.cern.ch/trexfitter-docs/latest/settings/
+- [ ] Open Data documentation https://opendata.atlas.cern/docs/data/for_education/13TeV25_details
+- [ ] Trajectory dataset (e.g. asking model to run trex fitter as a tool call, ask model to extract the significance given some trex fitter artifacts)
+- [ ] Opening root files and interacting with the objects inside (understand what is inside, the variables, summarize into natural language output)
+- [ ] Long horizon tasks as a combination of all other datasets (start from reading root file, write config, run and execute config, interpret results) --> eventually use in RL
+
 ## Physics rewards from a fit
 
 A reward is the number used to tell the model whether one finished config is better than another. It should use more than significance alone.
