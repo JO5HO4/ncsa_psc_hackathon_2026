@@ -9,11 +9,13 @@ This directory contains the runnable training side of the hackathon. It uses
 dataset by default. That dataset already has the `messages` and `tools` fields
 expected by verl; `verl_dataset.py` decodes its stored tool definitions.
 
-Hackathon datasets should use that same typed chat/tool shape. Author one
-canonical verified episode, render it separately for `codex` and `opencode`,
-and retain `logical_task_id`, `harness`, dataset family, fixture revision, and
-verification metadata alongside `messages` and `tools`. Do not split or report
-the two harness renderings as independent logical tasks.
+Hackathon datasets should use that same typed chat shape. Author one canonical
+verified config task, render it for `codex`, `opencode`, and `direct_config`,
+and retain `logical_task_id`, `modality`, `harness`, dataset family, fixture
+revision, and verification metadata alongside `messages` and `tools`. A direct
+record has `harness: none`, an empty `tools` list, and one assistant response
+containing only the config snippet. Do not split or report the three renderings
+as independent logical tasks.
 
 The SFT script is a useful baseline and a template for the dataset that the
 hackathon creates. It writes checkpoints under `artifacts/checkpoints/sft/`.

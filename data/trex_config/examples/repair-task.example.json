@@ -12,7 +12,7 @@
     "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
   },
   "initial_config": "# Fixture content is inserted by the dataset builder.\n",
-  "diagnostics": [{"tool": "validate_config", "category": "missing_sample", "message": "Required background sample is absent."}],
+  "diagnostics": [{"source": "fixture_validation", "category": "missing_sample", "message": "Required background sample is absent."}],
   "expected": {
     "reference_patch": "--- a/configs/example.config\n+++ b/configs/example.config\n@@\n-# missing background\n+# add the reviewed background sample here\n",
     "validation": {"must_pass": true, "expected_categories_removed": ["missing_sample"]},

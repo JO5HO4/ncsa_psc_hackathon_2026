@@ -54,4 +54,4 @@ The first real interface should return:
 - The significance, if TRExFitter produced one.
 - Useful error messages and log locations.
 
-See [TOOLS.md](TOOLS.md) for the simple boundary between the model and the runner.
+See the shared [agent tool contract](../docs/TOOL_CONTRACT.md) for the boundary between the model and the runner.

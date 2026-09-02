@@ -26,23 +26,25 @@ checkboxes until someone takes them.
 - [ ] Keep training, validation, and final test tasks separate from the start.
 - [ ] Find a faster way to histogram data: evaluate a new backend and already-histogrammed input data.
 
-## 2. Make one output format and two verifiers
+## 2. Make one output format, three modalities, and two verifiers
 
 | Owners | Status | Task |
 | --- | --- | --- |
-| Joshua, Chengxi | ⚪ | Agree on one basic record format for every dataset: task ID, dataset name, split, starting files, available tools, tool calls and their results, final answer, and check result. |
+| Joshua, Chengxi | ⚪ | Agree on one basic record format for every dataset: task ID, dataset name, modality, split, starting files, available tools, tool calls and their results when agentic, final config snippet when direct, and check result. |
 
-- [ ] From each reviewed task, make a Codex version and an OpenCode version. Give both versions the same logical task ID and keep them in the same split.
+- [ ] From each supported config task, make a Codex-agent version, an OpenCode-agent version, and a direct natural-language-to-config version. Give all three the same logical task ID and keep them in the same split.
+- [ ] Configure and test the v1 [native-tool contract](TOOL_CONTRACT.md) before authoring tool-use episodes: Codex uses `Bash`/`apply_patch`; OpenCode uses its native file and bash tools. No MCP or custom tool wrapper.
+- [ ] Define the direct-config prompt template and snippet insertion context. Its target must contain only a valid config snippet and its `tools` value must be `[]`.
 - [ ] Build a verifier that checks whether the model's tool-use output has valid Codex and OpenCode syntax.
-- [ ] Build a verifier that checks whether a TRExFitter config is valid and can run when needed. Save a clear pass/fail result, error message, time limit, log, and—when applicable—significance.
-- [ ] Test both verifiers and the two output versions on a few known good and bad tasks before publishing data.
+- [ ] Build a verifier that checks whether a TRExFitter config is valid and can run when needed, including a direct snippet after insertion into its documented template. Save a clear pass/fail result, error message, time limit, log, and—when applicable—significance.
+- [ ] Test both verifiers and all three output modalities on a few known good and bad tasks before publishing data.
 
 ## 3. Release, join, and train datasets
 
 | Owner | Status | Task |
 | --- | --- | --- |
 | Joshua | ⚪ | Convert the checked records into the files verl needs and provide one simple training command for Qwen 1.5B and Qwen 7B. |
-| Joshua | ⚪ | Compare untrained Qwen 1.5B/7B, trained Qwen 1.5B/7B, and strong reference models on held-out tasks. Report success separately for each dataset and for Codex versus OpenCode. |
+| Joshua | ⚪ | Compare untrained Qwen 1.5B/7B, trained Qwen 1.5B/7B, and strong reference models on held-out tasks. Report success separately for each dataset and modality: Codex agent, OpenCode agent, and direct config. |
 
 - [ ] Release each checked one-turn dataset separately.
 - [ ] Join released datasets into a separate long task: read a ROOT file → write a config → run TRExFitter → explain the result. Keep the source dataset and split recorded for every step.
