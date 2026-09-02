@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Initialize the linked verl and dataset repositories after a non-recursive clone.
+# Initialize the linked verl repository after a non-recursive clone.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,5 +18,5 @@ if [[ ! -d "$VERL_DIR" ]]; then
   exit 1
 fi
 
-echo "Submodules are ready."
+echo "verl submodule is ready."
 git -C "$REPO_ROOT" submodule status

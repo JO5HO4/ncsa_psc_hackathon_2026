@@ -8,16 +8,18 @@ Our first starting point is the working H→γγ config at [data/trex_config/fix
 
 ## Clone it
 
-`verl` and the two reference datasets are linked as Git submodules. Clone them
-with the repository:
+`verl` is a Git submodule. Clone it with the repository:
 
 ```bash
 git clone --recurse-submodules git@github.com:JO5HO4/ncsa_psc_hackathon_2026.git
 ```
 
-For an existing clone, run `bash training/bootstrap_verl.sh`. Git LFS must be
-installed so the Hugging Face Parquet files are downloaded rather than left as
-small pointer files.
+For an existing clone, run `bash training/bootstrap_verl.sh`. Download the
+reference training Parquet files directly from Hugging Face when needed:
+
+```bash
+bash data/fetch_reference_datasets.sh
+```
 
 ## Main folders
 

@@ -8,5 +8,8 @@ trex_fitter/workspaces/
 trex_fitter/hyy/
 trex_fitter/inputs/Data/
 trex_fitter/inputs/MC/
+data/reference/hep-config-sft/
+data/reference/hep-signature-backgrounds/
+data/atlas_opendata/
 data/trex_config/generated/
 data/trex_config/splits/

@@ -23,6 +23,7 @@ clone:
 
 ```bash
 bash training/bootstrap_verl.sh
+bash data/fetch_reference_datasets.sh
 ```
 
 From the repository root in a GPU session, start the supplied verl container:
@@ -68,8 +69,8 @@ task will create these files from reviewed config tasks.
 
 ## Files
 
-- `bootstrap_verl.sh` initializes the linked verl and dataset repositories for
-  an existing clone.
+- `bootstrap_verl.sh` initializes the linked verl repository for an existing
+  clone.
 - `container.sh` opens the GPU-enabled verl container with this repository at
   `/workspace`.
 - `setup.sh` installs that local checkout into the container session.
