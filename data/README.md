@@ -8,26 +8,28 @@ files with:
 bash data/fetch_reference_datasets.sh
 ```
 
-`trex_config/` is where we will build the new TRExFitter config dataset. Each task describes a physics goal, a starting `.config` file, and the expected fix.
+`trex_config/` is the first of several small agentic dataset families. Other families will cover ROOT-file work, ATLAS Open Data knowledge, TRExFitter execution, and fit-result interpretation. Each family owns small reviewed source-task records, fixtures, and a verifier; family releases are later combined into a separately versioned long-horizon dataset.
 
 The first starting config is `trex_config/fixtures/hyy/hyy.config`. It is a working H→γγ TRExFitter config and should be the base for our first example tasks.
 
 `harbor/` is reserved for Harbor data when it arrives.
 
-Write new tasks as JSON records using `trex_config/schema/`. Do not create training Parquet files by hand; the training code will create them later.
+Write new TRExFitter-config tasks as JSON records using `trex_config/schema/`. Do not create training Parquet files by hand. A dataset builder will turn each verified source task into an agent episode and render both `codex` and `opencode` variants. Those rendered rows share a `logical_task_id` and split; they must never be separated across train, validation, or test.
 
 ## Dataset publishing convention
 
 Treat a Hugging Face dataset repository as the canonical home for every
-reviewed dataset we create: config tasks, SFT records, RL prompts, held-out
-evaluation tasks, and inference prompt sets. Keep only schemas, small examples,
-and download scripts in this Git repository. Large or generated dataset files
-should be published to the Hub and fetched by dataset ID and revision.
+reviewed dataset we create: individual task-family releases, Codex/OpenCode SFT
+renderings, RL prompts, held-out evaluation tasks, merged long-horizon tasks,
+and inference prompt sets. Keep only schemas, small examples, and download
+scripts in this Git repository. Large or generated dataset files should be
+published to the Hub and fetched by dataset ID and revision.
 
 For inference, a Hub dataset can use any string prompt column; pass its name to
 `inference/run_prompts.py --prompt-field`. The dataset's README should state
-the schema, splits, source fixture version, intended use, and immutable commit
-or tag to use for evaluations.
+the family, schema, harness/template version, tool-manifest revision, splits,
+source fixture version, verifier, intended use, and immutable commit or tag to
+use for evaluations.
 
 When a reviewed local split is ready, publish it with a logged-in Hugging Face
 account instead of committing it here:

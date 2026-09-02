@@ -1,22 +1,46 @@
-# Training data format
+# Training and testing plan
 
-This is a plan for later. There is no one-command training tool yet.
+## What we will train
 
-People making physics tasks write JSON records in `data/trex_config/`. The training code will read those records and make the files verl needs.
+We will train two small Qwen models on the datasets made in this project:
 
-For supervised fine-tuning (SFT), each training example will look like a chat:
+- Qwen 1.5B
+- Qwen 7B
 
-```text
-system: You may only edit the supplied .config file.
-user:   Physics goal, starting config, and error message.
-assistant: <patch>...the correct diff...</patch>
-```
+Each training dataset includes both the Codex and OpenCode versions of the
+same tasks. The two versions of a task must stay in the same data split.
 
-For reinforcement learning (RL), the model sees the same task and returns a patch. Our checker applies the patch and runs TRExFitter. The result becomes the score for that answer.
+## What we will compare
 
-Important rules:
+Use the same held-out tasks to compare three groups:
 
-- People review JSON task records, not Parquet files.
-- Test answers must never be used for training.
-- A task keeps the same ID and starting config once it is published.
-- Every training run should save the model, data version, command, and result.
+| Group | Models |
+| --- | --- |
+| Untrained baseline | Qwen 1.5B and Qwen 7B before training on our data |
+| Trained models | The same Qwen 1.5B and Qwen 7B after training on our data |
+| Strong reference models | Available state-of-the-art models, tested without training on our data |
+
+For every model, report results separately for each dataset family and for
+Codex versus OpenCode. Do not use any held-out task, or its Codex/OpenCode
+partner, during training.
+
+## What the training data needs
+
+The dataset builder turns each reviewed task into the chat and tool-call format
+used by the training code. Each record includes the user request, available
+tools, tool calls and their results, and the final answer. The builder makes
+one Codex record and one OpenCode record for the same task.
+
+People review the source tasks and the results from the two verifiers. The
+training code creates the Parquet files it needs; do not edit those files by
+hand.
+
+## What to save
+
+For each run, save the model name and size, dataset version, training command,
+and test results. For each test task, save whether the output has valid
+Codex/OpenCode syntax and, for config tasks, whether the TRExFitter config is
+valid and runs when required.
+
+Reinforcement learning is a later step only if this supervised-training
+comparison works first.

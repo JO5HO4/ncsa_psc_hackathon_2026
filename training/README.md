@@ -9,6 +9,12 @@ This directory contains the runnable training side of the hackathon. It uses
 dataset by default. That dataset already has the `messages` and `tools` fields
 expected by verl; `verl_dataset.py` decodes its stored tool definitions.
 
+Hackathon datasets should use that same typed chat/tool shape. Author one
+canonical verified episode, render it separately for `codex` and `opencode`,
+and retain `logical_task_id`, `harness`, dataset family, fixture revision, and
+verification metadata alongside `messages` and `tools`. Do not split or report
+the two harness renderings as independent logical tasks.
+
 The SFT script is a useful baseline and a template for the dataset that the
 hackathon creates. It writes checkpoints under `artifacts/checkpoints/sft/`.
 After training, it converts the final checkpoint to a `huggingface/` directory
@@ -68,7 +74,7 @@ bash training/scripts/run_verl_sft.sh
 
 `TRAIN_FILE` and `VAL_FILE` must be absolute paths once inside the container,
 or paths relative to the local `verl/` checkout. The future dataset-preparation
-task will create these files from reviewed config tasks.
+task will create these files from reviewed, verified dataset-family episodes.
 
 ## Files
 

@@ -1,71 +1,53 @@
 # Task board
 
-Pick one area and put an owner next to each task.
+Keep each dataset small and useful on its own; we will join them into longer
+tasks later. Assigned work uses an owner-first table so the owner is visible
+before the task when rendered.
 
-## Config tasks and physics
+## 1. Make the small datasets
 
-- [ ] Review the working H→γγ config in `data/trex_config/fixtures/hyy/hyy.config` and choose the first small part of the `.config` language we will support.
-- [ ] Write five simple physics goals.
-- [ ] Make a starting config and a correct fixed config for each goal.
-- [ ] Make a few broken versions: missing sample, bad region, bad setting, and so on.
-- [ ] Split tasks into training, validation, and final test sets.
+- [ ] Choose the first small part of the TRExFitter config language to support.
+- [ ] Make simple config tasks: a physics goal, a starting config, a known good answer, and broken examples.
 
-## TRExFitter Histogramming
+| Owner | Task |
+| --- | --- |
+| Chengxi | [ ] Turn the TRExFitter documentation into H→γγ operational tasks. |
+| Joshua | [ ] Turn ATLAS Open Data documentation into small tasks. |
+| Dongwon | [ ] Make ROOT-file tasks: inspect objects and variables, then describe them in plain language. |
 
-- [ ] TRExFitter histogramming is very slow; need some other backend to handle histogramming
-- [ ] Start with a dataset that is already histogrammed
-- [ ] Modify TRExFitter to return a success/fail based on usability of the config file
+- [ ] Make small tasks for running TRExFitter and reading its results.
+- [ ] Keep training, validation, and final test tasks separate from the start.
+- [ ] Find a faster way to histogram data: evaluate a new backend and already-histogrammed input data.
 
-## Checking and running configs
+## 2. Make one output format and two verifiers
 
-- [ ] Decide what “valid config” means for the first version.
-- [ ] Build a local checker for the supported config fields.
-- [ ] Build a real TRExFitter check using the container and fixture inputs.
-- [ ] Make one command that takes a finished config and returns whether it worked and its significance.
-- [ ] Add clear error messages, time limits, and saved logs.
+| Owners | Task |
+| --- | --- |
+| Joshua, Chengxi | [ ] Agree on one basic record format for every dataset: task ID, dataset name, split, starting files, available tools, tool calls and their results, final answer, and check result. |
 
-## SFT Dataset
-- [ ] (Joshua + Chengxi) Decide on a standardized format of data and required fields
-- [ ] (Chengxi) Generate SFT dataset from TRExFitter documentation, frame it as operational question/answers pairs in the context of Hyy https://trexfitter-docs.web.cern.ch/trexfitter-docs/latest/settings/
-- [ ] (Joshua) Open Data documentation https://opendata.atlas.cern/docs/data/for_education/13TeV25_details
-- [ ] (Dongwon) Opening root files and interacting with the objects inside (understand what is inside, the variables, summarize into natural language output)
-- [ ] Create some sort of verifier for the dataset
-- [ ] Trajectory dataset (e.g. asking model to run trex fitter as a tool call, ask model to extract the significance given some trex fitter artifacts)
-- [ ] Long horizon tasks as a combination of all other datasets (start from reading root file, write config, run and execute config, interpret results) --> eventually use in RL
+- [ ] From each reviewed task, make a Codex version and an OpenCode version. Give both versions the same logical task ID and keep them in the same split.
+- [ ] Build a verifier that checks whether the model's tool-use output has valid Codex and OpenCode syntax.
+- [ ] Build a verifier that checks whether a TRExFitter config is valid and can run when needed. Save a clear pass/fail result, error message, time limit, log, and—when applicable—significance.
+- [ ] Test both verifiers and the two output versions on a few known good and bad tasks before publishing data.
 
-## Physics rewards from a fit
+## 3. Release, join, and train datasets
 
-A reward is the number used to tell the model whether one finished config is better than another. It should use more than significance alone.
+- [ ] Release each checked one-turn dataset separately.
+- [ ] Join released datasets into a separate long task: read a ROOT file → write a config → run TRExFitter → explain the result. Keep the source dataset and split recorded for every step.
 
-- [ ] List the useful files TRExFitter writes after a run: fit status, yields, uncertainties, pulls, correlations, plots, and significance.
-- [ ] Decide which numbers show that a fit is healthy and which numbers show a bad or unphysical fit.
-- [ ] Define a first reward made from several simple parts: successful run, fit quality, sensible uncertainties, reasonable nuisance-parameter pulls, and the physics goal.
-- [ ] Add penalties for failed fits, missing output, unstable fits, or changes that make the config much more complicated without helping the result.
-- [ ] Update the evaluator so every run keeps a private copy of its TRExFitter artifacts before a reward is read.
-- [ ] Write code that reads the chosen output files and saves these numbers in one simple result file.
-- [ ] Fill the standard `trex_fitter/rewards/reward.schema.json` report; send only its `total` field to RL.
-- [ ] Test the reward on a small set of known good and bad configs to make sure it prefers the good ones for the right reasons.
-- [ ] Decide which reward parts are used for training and which are only reported to people.
+| Owner | Task |
+| --- | --- |
+| Joshua | [ ] Convert the checked records into the files verl needs and provide one simple training command for Qwen 1.5B and Qwen 7B. |
+| Joshua | [ ] Compare untrained Qwen 1.5B/7B, trained Qwen 1.5B/7B, and strong reference models on held-out tasks. Report success separately for each dataset and for Codex versus OpenCode. |
 
-## Training and testing models
-(Joshua)
-- [ ] Make sure that the model outputs are usable by an agentic harness (codex, opencode)
-- [ ] Turn the JSON task records into the format verl needs.
-- [ ] Make one simple command to train a small model with SFT.
-- [ ] Test the model on the held-out tasks.
-- [ ] Report patch success, config validity, and TRExFitter run success.
-- [ ] Only after SFT works, add RL scoring based on the final config result.
+- [ ] Add RL only after SFT works, using the final result from the verifier.
 
-## Training benchmarking 
-(Joshua)
-- [ ] Test untrained small language model without any context
-- [ ] Test untrained small language model with some additional context
-- [ ] Test small language model after RL/SFT
-- [ ] Test SOTA model without any context
-- [ ] Test SOTA models with additional context
+## 4. Score physics results
 
-## Harbor data — later
+- [ ] Decide which fit outputs show a healthy result: run status, significance, yields, uncertainties, pulls, and correlations.
+- [ ] Turn those outputs into one simple score that rewards a healthy fit meeting the goal and penalizes failures or unstable results.
+- [ ] Test the score on known good and bad configs, and save the full report before sending its final score to RL.
 
-- [ ] Add the Harbor export under `data/harbor/`.
-- [ ] Decide which Harbor examples are useful for training.
-- [ ] Keep any final test examples out of the training data.
+## 5. Later: Harbor data
+
+- [ ] Add the Harbor export under `data/harbor/`, choose useful examples, and keep final test examples out of training.

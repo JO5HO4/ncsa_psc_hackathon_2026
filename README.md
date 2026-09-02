@@ -1,8 +1,8 @@
 # TRExFitter hackathon
 
-We are building a starting point for teaching a small language model to fix TRExFitter `.config` files.
+We are building a starting point for teaching a small language model to operate a high-energy-physics analysis environment through agentic tools.
 
-The model receives a physics goal and a starting config. It returns a patch. Our software then checks the patch and runs TRExFitter. The model does not run commands or TRExFitter itself.
+We will release several small, verified one-turn datasets: TRExFitter config work, ROOT-file inspection and modification, ATLAS Open Data knowledge, and execution/result interpretation. Each logical task is rendered for both Codex and OpenCode tool-use harnesses, then compatible family releases are composed into a separate long-horizon dataset. The initial family starts from a physics goal and a config, with the agent using bounded tools to inspect, repair, validate, and run it.
 
 Our first starting point is the working H→γγ config at [data/trex_config/fixtures/hyy/hyy.config](data/trex_config/fixtures/hyy/hyy.config).
 
@@ -25,7 +25,7 @@ bash data/fetch_reference_datasets.sh
 
 | Folder | What it is for |
 | --- | --- |
-| [data/](data/README.md) | Datasets and new config tasks |
+| [data/](data/README.md) | Dataset families, fixtures, and publishing conventions |
 | [trex_fitter/](trex_fitter/README.md) | The code that checks and runs configs |
 | [training/](training/README.md) | Training with verl |
 | [inference/](inference/README.md) | Testing a trained model |
