@@ -8,13 +8,13 @@ files with:
 bash data/fetch_reference_datasets.sh
 ```
 
-`trex_config/` is the first of several small dataset families. Each supported config task is rendered as a Codex agent episode, an OpenCode agent episode, and a direct natural-language-to-config example for the prompt endpoint. The direct target is only an insertable config snippet and has an empty `tools` list. Other families will cover ROOT-file work, ATLAS Open Data knowledge, TRExFitter execution, and fit-result interpretation. Each family owns small reviewed source-task records, fixtures, and a verifier; family releases are later combined into a separately versioned long-horizon dataset.
+`trex_config/` is the first of several small dataset families and contains only runnable `.config` files. Each supported config task is rendered as a Codex agent episode, an OpenCode agent episode, and a direct natural-language-to-config example for the prompt endpoint. The direct target is only an insertable config snippet and has an empty `tools` list. Other families will cover ROOT-file work, ATLAS Open Data knowledge, TRExFitter execution, and fit-result interpretation. Each family owns small reviewed source-task records, fixtures, and a verifier; family releases are later combined into a separately versioned long-horizon dataset.
 
-The first starting config is `trex_config/fixtures/hyy/hyy.config`. It is a working H→γγ TRExFitter config and should be the base for our first example tasks.
+The first starting config is `trex_config/hyy.config`. It is a working H→γγ TRExFitter config and should be the base for our first example tasks.
 
 `harbor/` is reserved for Harbor data when it arrives.
 
-Write new TRExFitter-config tasks as JSON records using `trex_config/schema/`. Do not create training Parquet files by hand. A dataset builder will turn each verified source task into an agent episode rendered for `codex` and `opencode`, plus a `direct_config` rendering. All rendered rows share a `logical_task_id` and split; they must never be separated across train, validation, or test. Verify a direct target by inserting its config snippet into the documented fixture/template.
+Maintain source task records and their schema with the published task dataset, not in this config-only directory. Do not create training Parquet files by hand. A dataset builder will turn each verified source task into an agent episode rendered for `codex` and `opencode`, plus a `direct_config` rendering. All rendered rows share a `logical_task_id` and split; they must never be separated across train, validation, or test. Verify a direct target by inserting its config snippet into the documented fixture/template.
 
 All agentic records use the v1 [native-tool contract](../docs/TOOL_CONTRACT.md). Do not create one-off tools, MCP servers, or custom wrappers for individual dataset families.
 
@@ -24,7 +24,7 @@ Treat a Hugging Face dataset repository as the canonical home for every
 reviewed dataset we create: individual task-family releases, Codex/OpenCode
 agent and direct-config SFT renderings, RL prompts, held-out evaluation tasks,
 merged long-horizon tasks, and inference prompt sets. Keep only schemas, small examples, and download
-scripts in this Git repository. Large or generated dataset files should be
+scripts and runnable configs in this Git repository. Large or generated dataset files should be
 published to the Hub and fetched by dataset ID and revision.
 
 For inference, a Hub dataset can use any string prompt column; pass its name to
@@ -64,6 +64,5 @@ bash data/fetch_atlas_opendata.sh GamGam
 bash data/fetch_atlas_opendata.sh all
 ```
 
-The H→γγ fixture needs only a small diphoton subset. Use
-`bash trex_fitter/scripts/fetch_hyy_inputs.sh` for that instead of downloading
-the full GamGam skim.
+The H→γγ fixture needs only a small diphoton subset. Input acquisition is kept
+outside `trex_fitter/`; download or stage only the files required by the task.

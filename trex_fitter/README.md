@@ -1,57 +1,53 @@
-# TRExFitter runner
+# TRExFitter
 
-This folder will hold the code that checks a finished `.config` file and runs TRExFitter.
+This directory contains the pinned upstream TRExFitter source and the small
+local tools used to preflight and run a configuration.
 
-The model gives us a patch. We apply the patch ourselves, then this runner checks and runs the finished config. The model never runs TRExFitter directly.
-
-`scripts/trex.py` uses the CERN StatAnalysis container through `podman-hpc`. It needs the input links in `inputs/` to work on the machine where it runs.
-
-To download the 2025 diphoton files needed by the working H→γγ config, run:
-
-```bash
-bash trex_fitter/scripts/fetch_hyy_inputs.sh
+```text
+trex_fitter/
+├── source/       # recursive upstream TRExFitter submodule, pinned to v1.10.0
+├── runner.py     # source-build launcher
+├── verifier.py   # inexpensive static config preflight
+└── README.md
 ```
 
-This creates local `inputs/Data/` and `inputs/MC/` folders. They are ignored
-by git and contain only the 16 data and 10 MC ROOT files named in the config.
-
-## Test the H→γγ config
-
-Run this from the repository root on a host compute node, not inside the verl
-container. It checks the available StatAnalysis container, input files, and
-the complete H→γγ workflow:
+Clone the repository recursively so that TRExFitter and its nested
+dependencies are present:
 
 ```bash
-python3 trex_fitter/scripts/trex.py ignored.config --check
+git clone --recurse-submodules git@github.com:JO5HO4/ncsa_psc_hackathon_2026.git
 ```
+
+For an existing checkout:
 
 ```bash
-python3 trex_fitter/scripts/evaluate_config.py \
-  data/trex_config/fixtures/hyy/hyy.config \
-  --actions n w f s \
-  --timeout 7200 \
-  --log-dir trex_fitter/workspaces/evaluations/hyy-reference
+git submodule update --init --recursive
 ```
 
-The second command makes histograms, builds the workspace, fits it, and
-calculates significance. Logs and the JSON result are written to
-`trex_fitter/workspaces/evaluations/hyy-reference/`.
+Build the pinned source in an ATLAS environment:
 
-## Reward format for later RL
+```bash
+source /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/user/atlasLocalSetup.sh
+asetup StatAnalysis,0.5.1
+cmake -S trex_fitter/source -B trex_fitter/source/build
+cmake --build trex_fitter/source/build -j 4
+```
 
-After a completed run, the evaluator will write one explainable reward report
-next to its logs. The report format and the place to implement its reader are
-in [rewards/](rewards/README.md). This is evaluator code, not a tool for the
-model and not training-framework code.
+Preflight a configuration before scheduling an expensive run:
 
-The starting configs live with the data, not in this folder. The first one is `../data/trex_config/fixtures/hyy/hyy.config`. The interface copies a supplied config into its own work folder before it runs it.
+```bash
+python3 trex_fitter/verifier.py data/trex_config/FitExample.config
+```
 
-`scripts/mock_trex.py` is only a fast fake runner for testing software. It does not check configs or do physics.
+Run selected TRExFitter actions after a clean preflight:
 
-The first real interface should return:
+```bash
+python3 trex_fitter/runner.py data/trex_config/FitExample.config --actions n w f s
+```
 
-- Whether the config ran successfully.
-- The significance, if TRExFitter produced one.
-- Useful error messages and log locations.
+By default, runner logs are written outside this directory to
+`artifacts/trex_fitter/`. Use `--log-dir` to choose another location.
 
-See the shared [agent tool contract](../docs/TOOL_CONTRACT.md) for the boundary between the model and the runner.
+`verifier.py` catches only inexpensive structural problems. A successful
+preflight does not guarantee that workspace construction or fitting will
+succeed; those are the responsibility of the pinned upstream executable.

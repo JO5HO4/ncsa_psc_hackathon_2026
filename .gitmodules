@@ -1,3 +1,6 @@
 [submodule "verl"]
 	path = verl
 	url = https://github.com/volcengine/verl.git
+[submodule "trexfitter"]
+	path = trex_fitter/source
+	url = https://gitlab.cern.ch/TRExStats/TRExFitter.git

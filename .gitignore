@@ -5,9 +5,13 @@ __pycache__/
 # Generated artifacts
 artifacts/
 trex_fitter/workspaces/
+trex_fitter/logs/
 trex_fitter/hyy/
 trex_fitter/inputs/Data/
 trex_fitter/inputs/MC/
+trex_fitter/inputs/test_inputs
+trex_fitter/test/
+data/trexfitter_test_inputs
 data/reference/hep-config-sft/
 data/reference/hep-signature-backgrounds/
 data/atlas_opendata/
