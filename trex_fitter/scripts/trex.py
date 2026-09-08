@@ -12,7 +12,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
-IMAGE = "gitlab-registry.cern.ch/atlas/statanalysis:0-4"
+# StatAnalysis 0.8.2; digest resolved from the tested registry image.
+IMAGE = "gitlab-registry.cern.ch/atlas/statanalysis@sha256:36a8c06ae90401e3629830c8ffe3b9fcf0b2a1841b28f59e4ecfa49c243051e1"
 CONTAINER_ENGINE = "podman-hpc"
 
 PROJECT_DIR = Path(os.environ.get("ATLASRL_PROJECT_DIR", Path(__file__).resolve().parents[1])).resolve()
@@ -111,7 +112,7 @@ def container_cmd(shell_command: str) -> list[str]:
         "--env",
         "XDG_CACHE_HOME=/tmp/.cache",
     ]
-    
+
     seen = set()
     for src, dst, mode in mounts:
         key = (src, dst)

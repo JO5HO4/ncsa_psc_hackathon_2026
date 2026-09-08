@@ -119,13 +119,13 @@ python inference/run_prompts.py \
 ```
 
 For structured config tasks, run the optional wrapper. A `.json` file can hold
-one task or a JSON list; `.jsonl` holds one task per line. The provided example
-is schema-only, so use it only to check the interface, not as a physics result.
+one task or a JSON list; `.jsonl` holds one task per line. Supply task records
+from the published task dataset.
 
 ```bash
 python inference/run_tasks.py \
   --checkpoint /workspace/artifacts/checkpoints/sft-smoke/global_step_<N> \
-  --tasks data/trex_config/examples/repair-task.example.json \
+  --tasks <tasks.json-or-jsonl> \
   --output /workspace/artifacts/inference/example.jsonl \
   --device cuda \
   --temperature 0

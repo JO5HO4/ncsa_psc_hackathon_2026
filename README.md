@@ -4,7 +4,7 @@ We are building a starting point for teaching a small language model to operate 
 
 We will release several small, verified one-turn datasets: TRExFitter config work, ROOT-file inspection and modification, ATLAS Open Data knowledge, and execution/result interpretation. Each supported config task has three aligned renderings: Codex and OpenCode tool-use harnesses, plus a direct natural-language-to-config response for the model endpoint. The direct response contains only an insertable config snippet; the agent versions use bounded tools to inspect, repair, validate, and run. All sibling renderings share a logical task ID and split. Compatible family releases are then composed into a separate long-horizon dataset.
 
-Our first starting point is the working H→γγ config at [data/trex_config/fixtures/hyy/hyy.config](data/trex_config/fixtures/hyy/hyy.config).
+Our first starting point is the working H→γγ config at [data/trex_config/hyy.config](data/trex_config/hyy.config).
 
 ## Clone it
 
@@ -14,8 +14,15 @@ Our first starting point is the working H→γγ config at [data/trex_config/fix
 git clone --recurse-submodules git@github.com:JO5HO4/ncsa_psc_hackathon_2026.git
 ```
 
-For an existing clone, run `bash training/bootstrap_verl.sh`. Download the
-reference training Parquet files directly from Hugging Face when needed:
+For an existing clone, initialize the dependency:
+
+```bash
+git submodule update --init --recursive
+```
+
+`bash training/bootstrap_verl.sh` remains available when only the training
+dependency needs to be initialized. Download the reference training Parquet
+files directly from Hugging Face when needed:
 
 ```bash
 bash data/fetch_reference_datasets.sh

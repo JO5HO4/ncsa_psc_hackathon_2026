@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-INPUT_DIR="$REPO_ROOT/trex_fitter/inputs"
+INPUT_DIR="$REPO_ROOT/data/trex_fitter/inputs"
 DATA_DIR="$INPUT_DIR/Data"
 MC_DIR="$INPUT_DIR/MC"
 STAGING_DIR="$(mktemp -d "$INPUT_DIR/.hyy-download.XXXXXX")"
