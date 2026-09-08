@@ -7,3 +7,6 @@
 [submodule "data/datasets/root-sft-dataset"]
 	path = data/datasets/root-sft-dataset
 	url = git@hf.co:datasets/ho22joshua/root-sft-dataset
+[submodule "data/datasets/atlas-open-data-sft-dataset"]
+	path = data/datasets/atlas-open-data-sft-dataset
+	url = git@hf.co:datasets/ho22joshua/atlas-open-data-sft-dataset
