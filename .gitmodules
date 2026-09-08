@@ -1,3 +1,6 @@
 [submodule "verl"]
 	path = verl
 	url = https://github.com/volcengine/verl.git
+[submodule "data/samples"]
+	path = data/samples
+	url = git@hf.co:datasets/ho22joshua/hackathon_samples

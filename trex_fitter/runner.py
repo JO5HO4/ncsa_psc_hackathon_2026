@@ -20,8 +20,7 @@ from pathlib import Path
 TREX_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = TREX_DIR.parent
 EXAMPLE_DIR = PROJECT_DIR / "data" / "configs" / "examples"
-INPUT_DIR = PROJECT_DIR / "data" / "samples" / "hyy"
-EXAMPLE_INPUT_DIR = PROJECT_DIR / "data" / "samples" / "examples"
+SAMPLES_DIR = PROJECT_DIR / "data" / "samples"
 
 sys.path.insert(0, str(TREX_DIR / "scripts"))
 import trex as podman_trex  # noqa: E402
@@ -84,10 +83,10 @@ def validate(path: Path) -> str:
 
 def container_cmd(command: str) -> list[str]:
     """Use host UID/GID ownership and mount inputs at /workdir/inputs."""
-    if not INPUT_DIR.is_dir():
-        raise RuntimeError(f"Missing H→γγ input directory: {INPUT_DIR}")
-    if not EXAMPLE_INPUT_DIR.is_dir():
-        raise RuntimeError(f"Missing shared example inputs: {EXAMPLE_INPUT_DIR}")
+    if not (SAMPLES_DIR / "hyy").is_dir():
+        raise RuntimeError(f"Missing H→γγ input directory: {SAMPLES_DIR / 'hyy'}")
+    if not (SAMPLES_DIR / "examples").is_dir():
+        raise RuntimeError(f"Missing shared example inputs: {SAMPLES_DIR / 'examples'}")
     command_line = podman_trex.container_cmd(command)
     workdir_index = command_line.index("-w")
     command_line[workdir_index:workdir_index] = [
@@ -95,9 +94,7 @@ def container_cmd(command: str) -> list[str]:
         "--user",
         f"{os.getuid()}:{os.getgid()}",
         "-v",
-        f"{INPUT_DIR}:/workdir/inputs:ro",
-        "-v",
-        f"{EXAMPLE_INPUT_DIR}:/workdir/inputs/test_inputs:ro",
+        f"{SAMPLES_DIR}:/workdir/inputs:ro",
     ]
     return command_line
 
@@ -107,7 +104,8 @@ def check_setup() -> None:
         container_cmd(
             "which trex-fitter && "
             "test -d /workdir/inputs && "
-            "test -d /workdir/inputs/test_inputs && "
+            "test -d /workdir/inputs/examples && "
+            "test -d /workdir/inputs/hyy && "
             "echo 'TRExFitter and bundled inputs are available.'"
         ),
         label="check TRExFitter runner",
@@ -136,7 +134,7 @@ def run_actions(path: Path, actions: list[str], log_dir: Path, compatibility_mod
         # directory, with links to the bundled configs, before every action.
         container_work_dir = f"{container_log_dir}/multifit-work"
         container_config_dir = f"{container_work_dir}/test/configs"
-        source_config_dir = "/workdir/data/trex_config"
+        source_config_dir = "/workdir/data/configs/examples"
         if compatibility_mode:
             command_prefix = (
                 f"mkdir -p {shlex.quote(compatibility_dir)} && "
@@ -173,7 +171,7 @@ def main() -> None:
     parser.add_argument(
         "--validate-all",
         action="store_true",
-        help="Validate runner path handling for every data/trex_config/*.config file.",
+        help="Validate runner path handling for every data/configs/examples/*.config file.",
     )
     parser.add_argument(
         "--dry-run",
