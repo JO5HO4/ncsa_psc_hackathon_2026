@@ -4,7 +4,6 @@ __pycache__/
 
 # Generated artifacts
 artifacts/
-data/samples/examples
 data/samples/hyy/Data/
 data/samples/hyy/MC/
 trex_fitter/test/
