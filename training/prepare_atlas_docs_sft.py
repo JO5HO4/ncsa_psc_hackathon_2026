@@ -40,9 +40,12 @@ def main() -> None:
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for split in ("train", "validation"):
-        source = args.dataset_root / "sft" / f"root_docs_{split}.jsonl"
-        manual = args.dataset_root / "sft" / f"manual_examples_{split}.jsonl"
-        rendered = rows(source) + rows(manual)
+        sources = [
+            args.dataset_root / "sft" / f"root_docs_{split}.jsonl",
+            args.dataset_root / "sft" / f"manual_examples_{split}.jsonl",
+            args.dataset_root / "sft" / f"root_docs_generated_{split}.jsonl",
+        ]
+        rendered = [row for source in sources if source.exists() for row in rows(source)]
         pq.write_table(pa.Table.from_pylist(rendered, schema=SCHEMA), args.output_dir / f"{split}.parquet", compression="zstd")
         print(f"wrote {len(rendered)} {split} rows")
 
