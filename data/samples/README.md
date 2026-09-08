@@ -17,3 +17,11 @@ repository.
 Large inputs are intentionally ignored by Git. Fetch or stage the H→γγ inputs
 with `bash trex_fitter/scripts/fetch_hyy_inputs.sh` when that script is
 available for the checked-out workflow.
+
+The complete sample collection is published at
+[`ho22joshua/hackathon_samples`](https://huggingface.co/datasets/ho22joshua/hackathon_samples).
+To restore it at the expected local paths, run:
+
+```bash
+hf download ho22joshua/hackathon_samples --repo-type dataset --local-dir data/samples
+```
