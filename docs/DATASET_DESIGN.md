@@ -103,12 +103,12 @@ outcomes saved as evidence; they do not create separate verifier projects.
 For fit tasks there are three increasingly strong checks:
 
 1. **Basic check:** the config has the right shape and uses allowed fields.
-2. **TRExFitter check:** the pinned source build runs it with the fixture inputs.
+2. **TRExFitter check:** the pinned StatAnalysis container runs it with the fixture inputs.
 3. **Physics result:** the fit meets its task goal, such as a target significance.
 
 The static verifier catches cheap structural errors before a run, but the pinned
-source build remains the authority for workspace construction and physics
-results. For later RL, reward a healthy successful fit and the stated physics
+StatAnalysis container remains the authority for workspace construction and
+physics results. For later RL, reward a healthy successful fit and the stated physics
 goal, and penalize failures, instability, missing output, or needless
 complexity.
 

@@ -8,14 +8,13 @@ Our first starting point is the working H→γγ config at [data/trex_config/hyy
 
 ## Clone it
 
-`verl` and the source-pinned `TRExFitter` package are Git submodules. Clone
-them with the repository:
+`verl` is a Git submodule. Clone it with the repository:
 
 ```bash
 git clone --recurse-submodules git@github.com:JO5HO4/ncsa_psc_hackathon_2026.git
 ```
 
-For an existing clone, initialize the pinned dependencies:
+For an existing clone, initialize the dependency:
 
 ```bash
 git submodule update --init --recursive
