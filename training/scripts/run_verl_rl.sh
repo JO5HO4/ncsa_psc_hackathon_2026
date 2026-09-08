@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
+unset VIRTUAL_ENV
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VERL_DIR="${VERL_DIR:-$REPO_ROOT/verl}"
 cd "$VERL_DIR"
+export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-/tmp/verl-venv}"
 
-MODEL_PATH="${MODEL_PATH:-Qwen/Qwen2.5-7B-Instruct}"
+source "$REPO_ROOT/training/scripts/qwen35_profile.sh"
+
 NNODES="${NNODES:-1}"
-NGPUS_PER_NODE="${NGPUS_PER_NODE:-${NPROC_PER_NODE:-4}}"
+NGPUS_PER_NODE="${NGPUS_PER_NODE:-${NPROC_PER_NODE:-$QWEN35_DEFAULT_GPUS}}"
 INFER_BACKEND="${INFER_BACKEND:-sglang}"
 
 TRAIN_FILE="${TRAIN_FILE:?Set TRAIN_FILE to a verl-format RL training parquet file}"
 VAL_FILE="${VAL_FILE:?Set VAL_FILE to a verl-format RL validation parquet file}"
-SAVE_DIR="${SAVE_DIR:-$REPO_ROOT/artifacts/checkpoints/rl}"
+SAVE_DIR="${SAVE_DIR:-$REPO_ROOT/artifacts/checkpoints/$QWEN35_PROFILE_NAME-rl}"
 REWARD_FUNCTION="${REWARD_FUNCTION:?Set REWARD_FUNCTION to the Python reward-function module path}"
 
 TRAIN_BATCH_SIZE="${TRAIN_BATCH_SIZE:-32}"
@@ -44,7 +47,7 @@ LOG_VAL_GENERATIONS="${LOG_VAL_GENERATIONS:-0}"
 ROLLOUT_DATA_DIR="${ROLLOUT_DATA_DIR:-}"
 VALIDATION_DATA_DIR="${VALIDATION_DATA_DIR:-}"
 PROJECT_NAME="${PROJECT_NAME:-trex-config-hackathon}"
-EXPERIMENT_NAME="${EXPERIMENT_NAME:-config-rl-baseline}"
+EXPERIMENT_NAME="${EXPERIMENT_NAME:-$QWEN35_PROFILE_NAME-rl}"
 LORA_RANK="${LORA_RANK:-16}"
 LORA_ALPHA="${LORA_ALPHA:-16}"
 LORA_TARGETS="${LORA_TARGETS:-[\"q_proj\",\"k_proj\",\"v_proj\",\"o_proj\",\"gate_proj\",\"up_proj\",\"down_proj\"]}"
@@ -92,7 +95,7 @@ if [[ -n "$VALIDATION_DATA_DIR" ]]; then
   EXTRA_OVERRIDES+=(trainer.validation_data_dir="$VALIDATION_DATA_DIR")
 fi
 
-python3 -m verl.trainer.main_ppo \
+uv run --frozen --extra fsdp --extra sglang python -m verl.trainer.main_ppo \
   algorithm.adv_estimator=grpo \
   algorithm.use_kl_in_reward=False \
   data.train_files="$TRAIN_FILE" \
