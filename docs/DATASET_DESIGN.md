@@ -80,7 +80,7 @@ physics goal + starting .config file + diagnostic
                  bounded agent repair episode
 ```
 
-Start with `data/trex_config/hyy.config`, our working H→γγ config. A repair task declares `read`, `modify`, and `execute` capabilities. The Codex rendering exposes `Bash` and `apply_patch`: use bounded `Bash` reads and validation/run commands, and `apply_patch` for every file change. The OpenCode rendering exposes only the native tools required by the task—normally `read`, `edit` or `apply_patch`, and `bash`; enable `write` only when full-file replacement is intended. Both harnesses invoke task-provided validation, TRExFitter, and result-inspection commands only in the sandbox. The agent should use supplied tools rather than emit an out-of-band `<patch>...</patch>` answer.
+Start with `data/configs/examples/hyy.config`, our working H→γγ config. A repair task declares `read`, `modify`, and `execute` capabilities. The Codex rendering exposes `Bash` and `apply_patch`: use bounded `Bash` reads and validation/run commands, and `apply_patch` for every file change. The OpenCode rendering exposes only the native tools required by the task—normally `read`, `edit` or `apply_patch`, and `bash`; enable `write` only when full-file replacement is intended. Both harnesses invoke task-provided validation, TRExFitter, and result-inspection commands only in the sandbox. The agent should use supplied tools rather than emit an out-of-band `<patch>...</patch>` answer.
 
 For every supported repair or synthesis task, also create the direct rendering. Phrase its request for a human, provide only necessary local context, and target the smallest valid config block—not a patch or the complete fixture file.
 

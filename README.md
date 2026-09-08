@@ -4,7 +4,7 @@ We are building a starting point for teaching a small language model to operate 
 
 We will release several small, verified one-turn datasets: TRExFitter config work, ROOT-file inspection and modification, ATLAS Open Data knowledge, and execution/result interpretation. Each supported config task has three aligned renderings: Codex and OpenCode tool-use harnesses, plus a direct natural-language-to-config response for the model endpoint. The direct response contains only an insertable config snippet; the agent versions use bounded tools to inspect, repair, validate, and run. All sibling renderings share a logical task ID and split. Compatible family releases are then composed into a separate long-horizon dataset.
 
-Our first starting point is the working H→γγ config at [data/trex_config/hyy.config](data/trex_config/hyy.config).
+Our first starting point is the working H→γγ config at [data/configs/examples/hyy.config](data/configs/examples/hyy.config).
 
 ## Clone it
 

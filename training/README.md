@@ -68,8 +68,8 @@ through environment variables:
 ```bash
 MODEL_PATH=Qwen/Qwen2.5-Coder-1.5B-Instruct \
 NPROC_PER_NODE=4 \
-TRAIN_FILE=/workspace/data/trex_config/splits/train.parquet \
-VAL_FILE=/workspace/data/trex_config/splits/validation.parquet \
+TRAIN_FILE=/workspace/data/configs/splits/train.parquet \
+VAL_FILE=/workspace/data/configs/splits/validation.parquet \
 SAVE_DIR=/workspace/artifacts/checkpoints/my-run \
 bash training/scripts/run_verl_sft.sh
 ```

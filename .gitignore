@@ -4,13 +4,12 @@ __pycache__/
 
 # Generated artifacts
 artifacts/
-data/trex_fitter/inputs/Data/
-data/trex_fitter/inputs/MC/
-data/trex_fitter/inputs/test_inputs
+data/samples/examples
+data/samples/hyy/Data/
+data/samples/hyy/MC/
 trex_fitter/test/
-data/trexfitter_test_inputs
 data/reference/hep-config-sft/
 data/reference/hep-signature-backgrounds/
 data/atlas_opendata/
-data/trex_config/generated/
-data/trex_config/splits/
+data/configs/generated/
+data/configs/splits/

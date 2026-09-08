@@ -2,8 +2,8 @@
 """Run a bundled TRExFitter config in the pinned Podman-HPC environment.
 
 Examples:
-  python3 trex_fitter/runner.py data/trex_config/hyy.config
-  python3 trex_fitter/runner.py data/trex_config/FitExample.config --actions w f s
+  python3 trex_fitter/runner.py data/configs/examples/hyy.config
+  python3 trex_fitter/runner.py data/configs/examples/FitExample.config --actions w f s
   python3 trex_fitter/runner.py --validate-all --dry-run
 """
 
@@ -19,8 +19,9 @@ from pathlib import Path
 
 TREX_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = TREX_DIR.parent
-EXAMPLE_DIR = PROJECT_DIR / "data" / "trex_config"
-INPUT_DIR = PROJECT_DIR / "data" / "trex_fitter" / "inputs"
+EXAMPLE_DIR = PROJECT_DIR / "data" / "configs" / "examples"
+INPUT_DIR = PROJECT_DIR / "data" / "samples" / "hyy"
+EXAMPLE_INPUT_DIR = PROJECT_DIR / "data" / "samples" / "examples"
 
 sys.path.insert(0, str(TREX_DIR / "scripts"))
 import trex as podman_trex  # noqa: E402
@@ -84,7 +85,9 @@ def validate(path: Path) -> str:
 def container_cmd(command: str) -> list[str]:
     """Use host UID/GID ownership and mount inputs at /workdir/inputs."""
     if not INPUT_DIR.is_dir():
-        raise RuntimeError(f"Missing input directory: {INPUT_DIR}")
+        raise RuntimeError(f"Missing H→γγ input directory: {INPUT_DIR}")
+    if not EXAMPLE_INPUT_DIR.is_dir():
+        raise RuntimeError(f"Missing shared example inputs: {EXAMPLE_INPUT_DIR}")
     command_line = podman_trex.container_cmd(command)
     workdir_index = command_line.index("-w")
     command_line[workdir_index:workdir_index] = [
@@ -93,6 +96,8 @@ def container_cmd(command: str) -> list[str]:
         f"{os.getuid()}:{os.getgid()}",
         "-v",
         f"{INPUT_DIR}:/workdir/inputs:ro",
+        "-v",
+        f"{EXAMPLE_INPUT_DIR}:/workdir/inputs/test_inputs:ro",
     ]
     return command_line
 
