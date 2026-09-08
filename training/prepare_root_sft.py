@@ -79,7 +79,7 @@ def render(record: dict[str, object]) -> dict[str, object]:
 
     return {
         "id": record["id"],
-        "data_source": "root-rl-dataset",
+        "data_source": "root-sft-dataset",
         "task_family": "root_knowledge",
         "topic": record.get("topic", ""),
         "question_kind": record.get("question_kind", ""),

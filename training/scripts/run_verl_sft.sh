@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
+unset VIRTUAL_ENV
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VERL_DIR="${VERL_DIR:-$REPO_ROOT/verl}"
 cd "$VERL_DIR"
+export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-/tmp/verl-venv}"
 
-NPROC_PER_NODE="${NPROC_PER_NODE:-1}"
-MODEL_PATH="${MODEL_PATH:-Qwen/Qwen2.5-Coder-1.5B-Instruct}"
+source "$REPO_ROOT/training/scripts/qwen35_profile.sh"
+
+NPROC_PER_NODE="${NPROC_PER_NODE:-$QWEN35_DEFAULT_GPUS}"
 # These defaults run the included reference config dataset. Override them when
 # training on a hackathon-created split.
 TRAIN_FILE="${TRAIN_FILE:-$REPO_ROOT/data/reference/hep-config-sft/data/train.parquet}"
 VAL_FILE="${VAL_FILE:-$REPO_ROOT/data/reference/hep-config-sft/data/validation.parquet}"
-SAVE_DIR="${SAVE_DIR:-$REPO_ROOT/artifacts/checkpoints/sft}"
+SAVE_DIR="${SAVE_DIR:-$REPO_ROOT/artifacts/checkpoints/$QWEN35_PROFILE_NAME-sft}"
 
 TRAIN_BATCH_SIZE="${TRAIN_BATCH_SIZE:-16}"
 MICRO_BATCH_SIZE_PER_GPU="${MICRO_BATCH_SIZE_PER_GPU:-1}"
@@ -20,7 +23,7 @@ MAX_LENGTH="${MAX_LENGTH:-2048}"
 LR="${LR:-1e-5}"
 TOTAL_EPOCHS="${TOTAL_EPOCHS:-3}"
 PROJECT_NAME="${PROJECT_NAME:-trex-config-hackathon}"
-EXPERIMENT_NAME="${EXPERIMENT_NAME:-config-sft-baseline}"
+EXPERIMENT_NAME="${EXPERIMENT_NAME:-$QWEN35_PROFILE_NAME-sft}"
 LORA_RANK="${LORA_RANK:-16}"
 LORA_ALPHA="${LORA_ALPHA:-16}"
 LORA_TARGETS="${LORA_TARGETS:-[\"q_proj\",\"k_proj\",\"v_proj\",\"o_proj\",\"gate_proj\",\"up_proj\",\"down_proj\"]}"
@@ -33,10 +36,10 @@ MAX_CKPT_TO_KEEP="${MAX_CKPT_TO_KEEP:-null}"
 # training. This also handles the default LoRA setup correctly.
 EXPORT_FOR_INFERENCE="${EXPORT_FOR_INFERENCE:-true}"
 MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
-ENGINE_MODEL_DTYPE="${ENGINE_MODEL_DTYPE:-fp32}"
+ENGINE_MODEL_DTYPE="${ENGINE_MODEL_DTYPE:-bf16}"
 ENGINE_USE_TORCH_COMPILE="${ENGINE_USE_TORCH_COMPILE:-true}"
 
-torchrun --standalone --nnodes=1 --nproc_per_node="$NPROC_PER_NODE" --master_addr="$MASTER_ADDR" \
+uv run --frozen --extra fsdp --extra sglang torchrun --standalone --nnodes=1 --nproc_per_node="$NPROC_PER_NODE" --master_addr="$MASTER_ADDR" \
   -m verl.trainer.sft_trainer \
   data.train_files="$TRAIN_FILE" \
   data.val_files="$VAL_FILE" \
@@ -84,7 +87,7 @@ if [[ "$EXPORT_FOR_INFERENCE" == "true" ]]; then
     exit 1
   fi
   checkpoint_dir="$SAVE_DIR/global_step_$last_step"
-  python -m verl.model_merger merge \
+  uv run --frozen --extra fsdp --extra sglang python -m verl.model_merger merge \
     --backend fsdp \
     --local_dir "$checkpoint_dir" \
     --target_dir "$checkpoint_dir/huggingface"

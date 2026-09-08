@@ -37,12 +37,35 @@ bash inference/export_verl_checkpoint.sh \
 
 ## Run on a GPU node
 
-Use the same container session as training so the required PyTorch and
-Transformers packages are already available:
+Use the same Qwen3.5 container session as training. The setup command creates
+the node-local uv environment used by every inference command below:
 
 ```bash
 bash training/container.sh
 source training/setup.sh
+```
+
+Run the examples with `uv run --project /workspace/verl --no-sync python`;
+using the container's system `python` bypasses the Qwen3.5-compatible runtime.
+The first Qwen3.5-9B run downloads about 19 GB into `/hf_cache`, mapped by
+`training/container.sh` to `$PSCRATCH/qwen35-hf-cache`; a restart resumes it.
+Do not use Perlmutter's RAM-backed `/tmp` for this cache. The launcher disables
+Xet transfers for large downloads in this Podman-HPC environment. It also maps
+the container's `/tmp` to `$PSCRATCH/qwen35-container-tmp`, so interrupted
+loads do not consume the Slurm job's RAM allocation.
+The launcher also sets `UV_CACHE_DIR=/hf_cache/uv` to avoid unsupported locks
+in the home-directory uv cache.
+
+If Podman-HPC exits during the initial 9B download, prefetch the model from the
+GPU node's host shell (not from inside the container), then start the
+container. This fills the exact cache mounted at `/hf_cache` without making
+Podman own the transfer:
+
+```bash
+HF_HOME="$PSCRATCH/qwen35-hf-cache" \
+HF_HUB_CACHE="$PSCRATCH/qwen35-hf-cache/hub" \
+HF_HUB_DISABLE_XET=1 \
+hf download Qwen/Qwen3.5-9B
 ```
 
 ## General prompt inference
@@ -60,8 +83,8 @@ Create a prompt file. JSON accepts a list of strings or records with `id` and
 Run a base model directly from the Hub:
 
 ```bash
-python inference/run_prompts.py \
-  --model Qwen/Qwen2.5-Coder-1.5B-Instruct \
+uv run --project /workspace/verl --no-sync python inference/run_prompts.py \
+  --model Qwen/Qwen3.5-0.8B \
   --prompts prompts.json \
   --output /workspace/artifacts/inference/base-qwen.jsonl \
   --format chat \
@@ -74,6 +97,60 @@ model's Hugging Face chat template. Output JSONL has one metadata record then
 one completion record per input prompt, preserving its `id`, prompt, raw output,
 and generation time.
 
+Replace `Qwen/Qwen3.5-0.8B` with `Qwen/Qwen3.5-9B` to run the larger profile on
+a suitable GPU allocation. Both current Qwen3.5 models are multimodal, but
+these text-only commands need no image inputs.
+
+## ROOT SFT held-out test set
+
+The canonical dataset stores its split in the `split` column of `root.jsonl`.
+The following commands pass only each held-out record's `question` to the base
+model; its reference `answer` is never included in the prompt or output. Run
+the 0.8B baseline first:
+
+```bash
+uv run --project /workspace/verl --no-sync python inference/run_prompts.py \
+  --model Qwen/Qwen3.5-0.8B \
+  --prompts /workspace/data/datasets/root-sft-dataset/root.jsonl \
+  --prompt-field question \
+  --id-field id \
+  --filter-field split \
+  --filter-value test \
+  --format chat \
+  --system-prompt "You are a careful high-energy-physics assistant. Answer ROOT questions accurately and concisely. Do not invent unsupported details." \
+  --device cuda \
+  --temperature 0 \
+  --output /workspace/artifacts/inference/root-sft-test-qwen35-0.8b.jsonl
+```
+
+On a GPU with sufficient memory for the 9B model, run the matching baseline by
+changing the model and output name:
+
+```bash
+uv run --project /workspace/verl --no-sync python inference/run_prompts.py \
+  --model Qwen/Qwen3.5-9B \
+  --prompts /workspace/data/datasets/root-sft-dataset/root.jsonl \
+  --prompt-field question \
+  --id-field id \
+  --filter-field split \
+  --filter-value test \
+  --format chat \
+  --system-prompt "You are a careful high-energy-physics assistant. Answer ROOT questions accurately and concisely. Do not invent unsupported details." \
+  --device cuda \
+  --temperature 0 \
+  --output /workspace/artifacts/inference/root-sft-test-qwen35-9b.jsonl
+```
+
+Each JSONL output begins with run metadata and contains exactly 61 completion
+records. Keep these base-model outputs separate from SFT checkpoints. On the
+40 GB Perlmutter A100, Qwen3.5 uses a 30 GiB GPU placement cap by default,
+leaving generation headroom while normally keeping the 9B model on GPU;
+override it only with
+`QWEN35_GPU_MEMORY_GIB=VALUE` when you have confirmed sufficient headroom.
+Qwen3.5 thinking mode is disabled by default so the completion contains the
+answer rather than a reasoning trace; use `--enable-thinking` only when that
+trace is explicitly wanted.
+
 ## Hugging Face Dataset input
 
 The same runner can read prompts from a Hub dataset. The dataset only needs a
@@ -82,8 +159,8 @@ For example, a dataset whose `test` split has `instruction` and `task_id`
 columns runs as:
 
 ```bash
-python inference/run_prompts.py \
-  --model Qwen/Qwen2.5-Coder-1.5B-Instruct \
+uv run --project /workspace/verl --no-sync python inference/run_prompts.py \
+  --model Qwen/Qwen3.5-0.8B \
   --dataset ho22joshua/my-prompt-dataset \
   --split test \
   --prompt-field instruction \
@@ -102,7 +179,7 @@ output metadata records all of those choices.
 First verify that a selected checkpoint loads and generates text:
 
 ```bash
-python inference/smoke_test.py \
+uv run --project /workspace/verl --no-sync python inference/smoke_test.py \
   --checkpoint /workspace/artifacts/checkpoints/sft-smoke/global_step_<N> \
   --device cuda
 ```
@@ -110,7 +187,7 @@ python inference/smoke_test.py \
 Use the same generic command with the `global_step_N` checkpoint path:
 
 ```bash
-python inference/run_prompts.py \
+uv run --project /workspace/verl --no-sync python inference/run_prompts.py \
   --model /workspace/artifacts/checkpoints/sft-smoke/global_step_<N> \
   --prompts prompts.json \
   --output /workspace/artifacts/inference/sft-prompts.jsonl \
@@ -123,7 +200,7 @@ one task or a JSON list; `.jsonl` holds one task per line. Supply task records
 from the published task dataset.
 
 ```bash
-python inference/run_tasks.py \
+uv run --project /workspace/verl --no-sync python inference/run_tasks.py \
   --checkpoint /workspace/artifacts/checkpoints/sft-smoke/global_step_<N> \
   --tasks <tasks.json-or-jsonl> \
   --output /workspace/artifacts/inference/example.jsonl \
