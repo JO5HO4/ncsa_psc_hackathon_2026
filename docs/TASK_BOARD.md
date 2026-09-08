@@ -39,10 +39,6 @@ checkboxes until someone takes them.
 - [ ] Build a verifier that checks whether a TRExFitter config is valid and can run when needed, including a direct snippet after insertion into its documented template. Save a clear pass/fail result, error message, time limit, log, and—when applicable—significance.
 - [ ] Test both verifiers and all three output modalities on a few known good and bad tasks before publishing data.
 
-## 3. Rewards + Physics Metrics
-
-
-
 ## 3. Release, join, and train datasets
 
 | Owner | Status | Task |
