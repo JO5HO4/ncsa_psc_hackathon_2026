@@ -18,7 +18,7 @@ checkboxes until someone takes them.
 | --- | --- | --- |
 | Chengxi | ⚪ | Turn the TRExFitter documentation into H→γγ operational tasks. |
 | Joshua | ⚪ | Turn ATLAS Open Data documentation into small tasks. |
-| Dongwon | ⚪ | Make ROOT-file tasks: inspect objects and variables, then describe them in plain language. |
+| Dongwon | 🟢 | Make ROOT-file tasks: inspect objects and variables, then describe them in plain language. |
 
 - [ ] Choose the first small part of the TRExFitter config language to support.
 - [ ] Make simple config tasks: a physics goal, a starting config, a known good answer, and broken examples.
@@ -39,12 +39,16 @@ checkboxes until someone takes them.
 - [ ] Build a verifier that checks whether a TRExFitter config is valid and can run when needed, including a direct snippet after insertion into its documented template. Save a clear pass/fail result, error message, time limit, log, and—when applicable—significance.
 - [ ] Test both verifiers and all three output modalities on a few known good and bad tasks before publishing data.
 
+## 3. Rewards + Physics Metrics
+
+
+
 ## 3. Release, join, and train datasets
 
 | Owner | Status | Task |
 | --- | --- | --- |
 | Joshua | ⚪ | Convert the checked records into the files verl needs and provide one simple training command for Qwen 1.5B and Qwen 7B. |
-| Joshua | ⚪ | Compare untrained Qwen 1.5B/7B, trained Qwen 1.5B/7B, and strong reference models on held-out tasks. Report success separately for each dataset and modality: Codex agent, OpenCode agent, and direct config. |
+| Joshua | ⚪ | Compare untrained Qwen 0.8B/9B, trained Qwen 0.8B/9B, and strong reference models on held-out tasks. Report success separately for each dataset and modality: Codex agent, OpenCode agent, and direct config. |
 
 - [ ] Release each checked one-turn dataset separately.
 - [ ] Join released datasets into a separate long task: read a ROOT file → write a config → run TRExFitter → explain the result. Keep the source dataset and split recorded for every step.
@@ -52,8 +56,9 @@ checkboxes until someone takes them.
 
 ## 4. Score physics results
 
-- [ ] Decide which fit outputs show a healthy result: run status, significance, yields, uncertainties, pulls, and correlations.
-- [ ] Turn those outputs into one simple score that rewards a healthy fit meeting the goal and penalizes failures or unstable results.
+| Owners | Status | Task |
+| --- | --- | --- |
+| Charlie, Dongwon | ⚪ | Use TRExFitter run logs and artifacts to come up with physically meaningful metrics/rewards to evaluate the quality of the config. Decide which fit outputs show a healthy result: run status, significance, yields, uncertainties, pulls, and correlations. Turn those outputs into one simple score that rewards a healthy fit meeting the goal and penalizes failures or unstable results.|
 - [ ] Test the score on known good and bad configs, and save the full report before sending its final score to RL.
 
 ## 5. Later: Harbor data
