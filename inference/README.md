@@ -151,6 +151,41 @@ Qwen3.5 thinking mode is disabled by default so the completion contains the
 answer rather than a reasoning trace; use `--enable-thinking` only when that
 trace is explicitly wanted.
 
+## ATLAS ROOT zero-shot query benchmark
+
+The public benchmark lives in the `atlas-open-data-sft-dataset` submodule.
+For a direct base-model baseline, first generate completions for its eight
+query tasks. The prompts request a short final answer; this measures ROOT
+knowledge without granting the model tool execution:
+
+```bash
+uv run --project /workspace/verl --no-sync python inference/run_prompts.py \
+  --model Qwen/Qwen3.5-0.8B \
+  --prompts /workspace/data/datasets/atlas-open-data-sft-dataset/tasks/query_tasks.jsonl \
+  --prompt-field question \
+  --id-field id \
+  --format chat \
+  --no-enable-thinking \
+  --system-prompt "Reply with only the requested final answer. Do not explain your reasoning." \
+  --device cuda \
+  --temperature 0 \
+  --max-new-tokens 32 \
+  --output /workspace/artifacts/inference/atlas-root-qwen35-0.8b-query.jsonl
+```
+
+Then score the output using the dataset's own verifier:
+
+```bash
+python inference/evaluate_atlas_benchmark.py \
+  --completions /workspace/artifacts/inference/atlas-root-qwen35-0.8b-query.jsonl \
+  --dataset-root /workspace/data/datasets/atlas-open-data-sft-dataset \
+  --output /workspace/artifacts/inference/atlas-root-qwen35-0.8b-query-score.json
+```
+
+This scores all eight query tasks. The three artifact tasks require a future
+agent runner that lets the model call `bash`, write a macro, and invoke
+`verify_task.py`; they cannot be fairly scored from one-shot text generation.
+
 ## Hugging Face Dataset input
 
 The same runner can read prompts from a Hub dataset. The dataset only needs a
