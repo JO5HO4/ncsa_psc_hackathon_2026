@@ -186,6 +186,22 @@ This scores all eight query tasks. The three artifact tasks require a future
 agent runner that lets the model call `bash`, write a macro, and invoke
 `verify_task.py`; they cannot be fairly scored from one-shot text generation.
 
+To evaluate command synthesis instead, first build the dedicated prompts on
+the host or in the container:
+
+```bash
+python3 /workspace/data/datasets/atlas-open-data-sft-dataset/scripts/build_command_prompts.py \
+  --tasks /workspace/data/datasets/atlas-open-data-sft-dataset/tasks/query_tasks.jsonl \
+  --manifest /workspace/data/datasets/atlas-open-data-sft-dataset/fixtures/manifest.json \
+  --dataset-root /workspace/data/datasets/atlas-open-data-sft-dataset \
+  --output /workspace/artifacts/inference/atlas-root-command-prompts.jsonl
+```
+
+Run that file with `--prompt-field prompt` and a system instruction to return
+only the command. These completions are commands for a user or agent to
+execute; do not score them with `evaluate_atlas_benchmark.py`, which expects
+final numerical/text answers.
+
 ## Hugging Face Dataset input
 
 The same runner can read prompts from a Hub dataset. The dataset only needs a
