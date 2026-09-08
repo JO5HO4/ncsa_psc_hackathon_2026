@@ -37,10 +37,26 @@ Initialize it with:
 git submodule update --init --recursive data/datasets/root-rl-dataset
 ```
 
-It has fixed train, validation, and held-out test splits, but is not yet direct
-verl input: render its source records into train and validation Parquet files
-with `messages` and `tools` before supplying them as `TRAIN_FILE` and
-`VAL_FILE`. Do not use the held-out test records for training.
+It has fixed train, validation, and held-out test splits. Render its SFT rows
+into the direct verl format with:
+
+```bash
+python3 training/prepare_root_sft.py \
+  --source data/datasets/root-rl-dataset/root.jsonl \
+  --output-dir data/datasets/root-rl-dataset/sft
+```
+
+This creates `sft/train.parquet` and `sft/validation.parquet` with the
+`messages` and `tools` fields expected by the local verl adapter. Do not use
+the held-out test records for training.
+
+Run SFT with the rendered files:
+
+```bash
+TRAIN_FILE=/workspace/data/datasets/root-rl-dataset/sft/train.parquet \
+VAL_FILE=/workspace/data/datasets/root-rl-dataset/sft/validation.parquet \
+bash training/scripts/run_verl_sft.sh
+```
 
 ## Run the SFT baseline on a GPU node
 
