@@ -202,6 +202,15 @@ only the command. These completions are commands for a user or agent to
 execute; do not score them with `evaluate_atlas_benchmark.py`, which expects
 final numerical/text answers.
 
+Attach the expected command and result to a copy of a command-generation run:
+
+```bash
+python /workspace/inference/attach_atlas_references.py \
+  --completions /workspace/artifacts/inference/atlas-root-qwen35-9b-commands-raw.jsonl \
+  --dataset-root /workspace/data/datasets/atlas-open-data-sft-dataset \
+  --output /workspace/artifacts/inference/atlas-root-qwen35-9b-commands.jsonl
+```
+
 ## Hugging Face Dataset input
 
 The same runner can read prompts from a Hub dataset. The dataset only needs a
