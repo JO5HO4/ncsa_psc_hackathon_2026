@@ -27,6 +27,21 @@ The RL launcher is also retained, but is intentionally not runnable yet: it
 needs the future RL task parquet and the reward function based on the TReX
 runner artifacts.
 
+## ROOT task dataset
+
+[`data/datasets/root-rl-dataset/`](../data/datasets/root-rl-dataset/) is an
+HF dataset submodule containing the versioned `root.jsonl` source records.
+Initialize it with:
+
+```bash
+git submodule update --init --recursive data/datasets/root-rl-dataset
+```
+
+It has fixed train, validation, and held-out test splits, but is not yet direct
+verl input: render its source records into train and validation Parquet files
+with `messages` and `tools` before supplying them as `TRAIN_FILE` and
+`VAL_FILE`. Do not use the held-out test records for training.
+
 ## Run the SFT baseline on a GPU node
 
 Clone the repository with its submodules, or initialize them in an existing
