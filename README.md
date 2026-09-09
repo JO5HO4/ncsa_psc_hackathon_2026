@@ -4,6 +4,19 @@ We are building a starting point for teaching a small language model to operate 
 
 We will release several small, verified one-turn datasets: TRExFitter config work, ROOT-file inspection and modification, ATLAS Open Data knowledge, and execution/result interpretation. Each supported config task has three aligned renderings: Codex and OpenCode tool-use harnesses, plus a direct natural-language-to-config response for the model endpoint. The direct response contains only an insertable config snippet; the agent versions use bounded tools to inspect, repair, validate, and run. All sibling renderings share a logical task ID and split. Compatible family releases are then composed into a separate long-horizon dataset.
 
+## ROOT runtime
+
+`training/root_runtime.sh` is the lightweight ROOT runtime for Perlmutter. It
+activates CVMFS `StatAnalysis,0.5.1` (ROOT 6.34.02) and avoids using that
+release's Python executable, which can fail on Perlmutter due to
+`libcrypt.so.2`. It is not a Python virtual environment: ROOT's C++ runtime is
+provided by CVMFS.
+
+```bash
+training/root_runtime.sh root --version
+training/root_runtime.sh --python data/datasets/atlas-open-data-sft-dataset/scripts/validate_dataset.py
+```
+
 Our first starting point is the working H→γγ config at [data/configs/examples/hyy.config](data/configs/examples/hyy.config).
 
 ## Clone it
