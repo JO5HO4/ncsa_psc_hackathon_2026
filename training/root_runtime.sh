@@ -11,8 +11,20 @@
 set -o pipefail
 
 if [[ $# -eq 0 ]]; then
-  echo "Usage: $0 --python SCRIPT.py [args...] | $0 COMMAND [args...]" >&2
+  echo "Usage: $0 [--current-root] --python SCRIPT.py [args...] | $0 [--current-root] COMMAND [args...]" >&2
   exit 2
+fi
+
+# Use an already configured ROOT installation, for example after
+# `lsetup "root 6.30.02-x86_64-centos7-gcc11-opt"` in an EL7 container.
+# This deliberately bypasses CVMFS StatAnalysis, which is an EL9 build.
+if [[ $1 == "--current-root" ]]; then
+  shift
+  if [[ $# -eq 0 ]] || ! command -v root >/dev/null 2>&1; then
+    echo "--current-root requires an already configured root command" >&2
+    exit 2
+  fi
+  exec "$@"
 fi
 
 host_python="$(command -v python3)"
