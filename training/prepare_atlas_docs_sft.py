@@ -39,7 +39,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    for split in ("train", "validation"):
+    for split in ("train", "validation", "test"):
         sources = [
             args.dataset_root / "sft" / f"root_docs_{split}.jsonl",
             args.dataset_root / "sft" / f"manual_examples_{split}.jsonl",
