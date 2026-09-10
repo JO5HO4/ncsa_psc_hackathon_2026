@@ -41,14 +41,14 @@ Use the same Qwen3.5 container session as training. The setup command creates
 the node-local uv environment used by every inference command below:
 
 ```bash
-bash training/container.sh
-source training/setup.sh
+bash training/scripts/container.sh
+source training/scripts/setup.sh
 ```
 
 Run the examples with `uv run --project /workspace/verl --no-sync python`;
 using the container's system `python` bypasses the Qwen3.5-compatible runtime.
 The first Qwen3.5-9B run downloads about 19 GB into `/hf_cache`, mapped by
-`training/container.sh` to `$PSCRATCH/qwen35-hf-cache`; a restart resumes it.
+`training/scripts/container.sh` to `$PSCRATCH/qwen35-hf-cache`; a restart resumes it.
 Do not use Perlmutter's RAM-backed `/tmp` for this cache. The launcher disables
 Xet transfers for large downloads in this Podman-HPC environment. It also maps
 the container's `/tmp` to `$PSCRATCH/qwen35-container-tmp`, so interrupted
@@ -161,7 +161,7 @@ knowledge without granting the model tool execution:
 ```bash
 uv run --project /workspace/verl --no-sync python inference/run_prompts.py \
   --model Qwen/Qwen3.5-0.8B \
-  --prompts /workspace/data/datasets/atlas-open-data-sft-dataset/tasks/query_tasks.jsonl \
+  --prompts /workspace/data/datasets/atlas-open-data-sft-dataset/data/tasks/query_tasks.jsonl \
   --prompt-field question \
   --id-field id \
   --format chat \
@@ -190,9 +190,9 @@ To evaluate command synthesis instead, first build the dedicated prompts on
 the host or in the container:
 
 ```bash
-python3 /workspace/data/datasets/atlas-open-data-sft-dataset/scripts/build_command_prompts.py \
-  --tasks /workspace/data/datasets/atlas-open-data-sft-dataset/tasks/query_tasks.jsonl \
-  --manifest /workspace/data/datasets/atlas-open-data-sft-dataset/fixtures/manifest.json \
+python3 /workspace/data/datasets/atlas-open-data-sft-dataset/tools/tasks/build_command_prompts.py \
+  --tasks /workspace/data/datasets/atlas-open-data-sft-dataset/data/tasks/query_tasks.jsonl \
+  --manifest /workspace/data/datasets/atlas-open-data-sft-dataset/data/fixtures/manifest.json \
   --dataset-root /workspace/data/datasets/atlas-open-data-sft-dataset \
   --output /workspace/artifacts/inference/atlas-root-command-prompts.jsonl
 ```

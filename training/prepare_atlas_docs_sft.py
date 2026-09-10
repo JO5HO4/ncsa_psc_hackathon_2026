@@ -74,9 +74,13 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for split in ("train", "validation", "test"):
         source = args.source_dir / f"root_docs_generated_{split}.jsonl"
-        expected = expected_results(args.dataset_root / "benchmarks" / f"root_docs_generated_{split}_expected.jsonl")
+        expected = expected_results(args.dataset_root / "benchmark" / "expected-results" / f"{split}.jsonl")
         rendered = rows(source, expected)
         pq.write_table(pa.Table.from_pylist(rendered, schema=SCHEMA), args.output_dir / f"{split}.parquet", compression="zstd")
+        (args.output_dir / f"{split}.jsonl").write_text(
+            "".join(json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n" for row in rendered),
+            encoding="utf-8",
+        )
         print(f"wrote {len(rendered)} {split} rows")
 
 

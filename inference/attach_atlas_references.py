@@ -19,10 +19,9 @@ def main() -> None:
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
 
-    queries = jsonl(args.dataset_root / "tasks/query_tasks.jsonl")
-    solutions = jsonl(args.dataset_root / "sft/command_solutions.jsonl")
+    queries = jsonl(args.dataset_root / "data/tasks/query_tasks.jsonl")
     results = {str(row["id"]): row["answer"] for row in queries}
-    commands = {str(row["source_task_id"]): row["response"] for row in solutions}
+    commands = {str(row["id"]): row["reference_actions"][0]["command"] for row in queries}
 
     rows = jsonl(args.completions)
     completion_count = 0

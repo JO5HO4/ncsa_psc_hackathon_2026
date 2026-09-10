@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
         "--benchmark",
         type=Path,
         default=None,
-        help="benchmark manifest (default: benchmarks/base_model_test.json under --dataset-root)",
+        help="benchmark manifest (default: benchmark/base_model_test.json under --dataset-root)",
     )
     parser.add_argument("--output", required=True, type=Path, help="score-report JSON")
     return parser.parse_args()
@@ -32,11 +32,11 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
 def main() -> None:
     args = parse_args()
     dataset_root = args.dataset_root.resolve()
-    benchmark_path = (args.benchmark or dataset_root / "benchmarks/base_model_test.json").resolve()
+    benchmark_path = (args.benchmark or dataset_root / "benchmark/base_model_test.json").resolve()
     benchmark = json.loads(benchmark_path.read_text(encoding="utf-8"))
     query_ids = benchmark["query_task_ids"]
     query_tasks = dataset_root / benchmark["task_sources"]["query"]
-    verifier = dataset_root / "verifiers/verify_query_final.py"
+    verifier = dataset_root / "tools/check-data/verifiers/verify_query_final.py"
 
     rows = load_jsonl(args.completions)
     metadata = next((row for row in rows if row.get("record_type") == "metadata"), {})
