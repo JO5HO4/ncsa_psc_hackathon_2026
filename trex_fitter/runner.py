@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Run a bundled TRExFitter config in the pinned Podman-HPC environment.
+"""Run a bundled TRExFitter config with the TREx or Coffea histogram backend.
 
 Examples:
   python3 trex_fitter/runner.py data/configs/examples/hyy.config
+  python3 trex_fitter/runner.py data/configs/examples/hyy.config --backend coffea --actions n
   python3 trex_fitter/runner.py data/configs/examples/FitExample.config --actions w f s
   python3 trex_fitter/runner.py --validate-all --dry-run
 """
@@ -10,6 +11,7 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shlex
@@ -22,8 +24,13 @@ PROJECT_DIR = TREX_DIR.parent
 EXAMPLE_DIR = PROJECT_DIR / "data" / "configs" / "examples"
 SAMPLES_DIR = PROJECT_DIR / "data" / "samples"
 
-sys.path.insert(0, str(TREX_DIR / "scripts"))
-import trex as podman_trex  # noqa: E402
+if __package__ in (None, ""):
+    sys.path.insert(0, str(PROJECT_DIR))
+from trex_fitter import runtime as podman_trex  # noqa: E402
+
+# The runtime module is also usable standalone, while this runner mounts
+# the repository root so configs, inputs, and ignored artifacts share /workdir.
+podman_trex.PROJECT_DIR = PROJECT_DIR
 
 
 READ_FROM_RE = re.compile(r"^\s*ReadFrom:\s*(\S+)", re.MULTILINE)
@@ -87,7 +94,11 @@ def container_cmd(command: str) -> list[str]:
         raise RuntimeError(f"Missing H→γγ input directory: {SAMPLES_DIR / 'hyy'}")
     if not (SAMPLES_DIR / "examples").is_dir():
         raise RuntimeError(f"Missing shared example inputs: {SAMPLES_DIR / 'examples'}")
-    command_line = podman_trex.container_cmd(command)
+    # The runner has an explicit input mount, so it need not recursively scan
+    # the repository (including large submodules) for external symlinks.
+    command_line = podman_trex.container_cmd(
+        command, discover_external_mounts=False
+    )
     workdir_index = command_line.index("-w")
     command_line[workdir_index:workdir_index] = [
         "--userns=keep-id",
@@ -112,7 +123,13 @@ def check_setup() -> None:
     )
 
 
-def run_actions(path: Path, actions: list[str], log_dir: Path, compatibility_mode: bool) -> None:
+def run_actions(
+    path: Path,
+    actions: list[str],
+    log_dir: Path,
+    compatibility_mode: bool,
+    work_dir: Path | None = None,
+) -> None:
     container_config = podman_trex.to_container_path(path)
     source = read_from(path)
     command_prefix = ""
@@ -150,13 +167,25 @@ def run_actions(path: Path, actions: list[str], log_dir: Path, compatibility_mod
             f"ln -sfn {shlex.quote(source_config_dir)}/*.config {shlex.quote(container_config_dir)}/ && "
             f"cd {shlex.quote(container_work_dir)} && "
         )
-    for action in actions:
-        command = f"{command_prefix}trex-fitter {shlex.quote(action)} {shlex.quote(config_for_run)}"
-        podman_trex.run(
-            container_cmd(command),
-            label=f"trex-fitter {action} {path.name}",
-            log_dir=log_dir,
+    elif work_dir is not None:
+        container_work_dir = podman_trex.to_container_path(work_dir.resolve())
+        command_prefix += (
+            f"mkdir -p {shlex.quote(container_work_dir)} && "
+            f"cd {shlex.quote(container_work_dir)} && "
         )
+    # TRExFitter accepts combined action strings and executes them in its
+    # canonical order. Keeping related stages in one process avoids repeated
+    # startup of the 8 GiB container image.
+    combined_actions = "".join(actions)
+    command = (
+        f"{command_prefix}trex-fitter {shlex.quote(combined_actions)} "
+        f"{shlex.quote(config_for_run)}"
+    )
+    podman_trex.run(
+        container_cmd(command),
+        label=f"trex-fitter {combined_actions} {path.name}",
+        log_dir=log_dir,
+    )
 
 
 def main() -> None:
@@ -166,6 +195,45 @@ def main() -> None:
         "--actions",
         nargs="+",
         help="TRExFitter actions to run. Defaults depend on the config's ReadFrom mode.",
+    )
+    parser.add_argument(
+        "--backend",
+        choices=("trex", "coffea"),
+        default="trex",
+        help="Implementation of NTUP action n (default: trex).",
+    )
+    parser.add_argument(
+        "--coffea-workers",
+        type=int,
+        default=1,
+        help="Coffea worker processes; 1 uses the iterative executor (default: 1).",
+    )
+    parser.add_argument(
+        "--coffea-chunksize",
+        type=int,
+        default=250_000,
+        help="Events per Coffea work item (default: 250000).",
+    )
+    parser.add_argument(
+        "--coffea-maxchunks",
+        type=int,
+        help="Limit chunks per sample for smoke tests; omit for production.",
+    )
+    parser.add_argument(
+        "--coffea-schema",
+        choices=("base", "atlas"),
+        default="base",
+        help="NanoEvents schema. Base preserves native TREx branch names (default: base).",
+    )
+    parser.add_argument(
+        "--coffea-stage-dir",
+        type=Path,
+        help="Copy configured ROOT inputs here before processing (use node-local storage).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Base directory for Coffea output; the Job name is appended (default: repo root).",
     )
     parser.add_argument("--check", action="store_true", help="Check the Podman-HPC image and exit.")
     parser.add_argument(
@@ -192,11 +260,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # trex.py normally assumes trex_fitter/ is /workdir. The example configs
-    # instead live one level above it and refer to /workdir/inputs, so mount the
-    # repository root consistently for every invocation.
-    podman_trex.PROJECT_DIR = PROJECT_DIR
-
     if args.check:
         check_setup()
 
@@ -213,21 +276,79 @@ def main() -> None:
 
     try:
         path = config_path(args.config)
-        actions = args.actions or default_actions(path)
+        actions = list("".join(args.actions or default_actions(path)))
     except ValueError as exc:
         parser.error(str(exc))
 
     if not actions:
         parser.error("at least one action is required")
+    if args.coffea_workers < 1:
+        parser.error("--coffea-workers must be at least 1")
+    if args.coffea_chunksize < 1:
+        parser.error("--coffea-chunksize must be at least 1")
+    if args.backend == "coffea" and "h" in actions:
+        parser.error("the Coffea backend replaces NTUP action n, not HIST action h")
 
     log_dir = args.log_dir or PROJECT_DIR / "artifacts" / "trex_fitter" / path.stem
     if args.dry_run:
         print(validate(path))
+        print("backend:", args.backend)
         print("actions:", " ".join(actions))
+        native_actions = [
+            action
+            for action in actions
+            if not (args.backend == "coffea" and action == "n")
+        ]
+        if args.backend == "coffea" and "n" in actions:
+            print("Coffea action: n")
+        if native_actions:
+            print("native container action string:", "".join(native_actions))
         print("log directory:", log_dir)
+        if args.backend == "coffea":
+            print("Coffea output base:", args.output_dir or PROJECT_DIR)
+            print("Coffea stage directory:", args.coffea_stage_dir or "disabled")
         return
 
-    run_actions(path, actions, log_dir, args.compatibility_mode)
+    remaining_actions = actions
+    trex_work_dir = (
+        args.output_dir.resolve()
+        if args.backend == "coffea" and args.output_dir is not None
+        else None
+    )
+    if args.backend == "coffea" and "n" in actions:
+        output_base = (args.output_dir or PROJECT_DIR).resolve()
+        from trex_fitter.config_verify import verify_config
+        verify_config(path, actions=actions).raise_for_errors()
+        try:
+            from trex_fitter.coffea_backend import run_histogramming
+        except ImportError as exc:
+            parser.error(
+                "Coffea dependencies are unavailable. Run "
+                "uv sync --extra coffea (and optionally --extra atlas-schema), "
+                f"then use uv run with the same extras ({exc})"
+            )
+        summary = run_histogramming(
+            path,
+            project_dir=PROJECT_DIR,
+            output_base=output_base,
+            workers=args.coffea_workers,
+            chunksize=args.coffea_chunksize,
+            maxchunks=args.coffea_maxchunks,
+            schema=args.coffea_schema,
+            stage_dir=args.coffea_stage_dir,
+        )
+        print(json.dumps(summary.__dict__, indent=2))
+        remaining_actions = [action for action in actions if action != "n"]
+        trex_work_dir = output_base
+
+    if remaining_actions:
+        run_actions(
+            path,
+            remaining_actions,
+            log_dir,
+            args.compatibility_mode,
+            work_dir=trex_work_dir,
+        )
 
 
 if __name__ == "__main__":

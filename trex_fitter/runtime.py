@@ -8,6 +8,7 @@ import os
 import re
 import shlex
 import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -16,7 +17,7 @@ from pathlib import Path
 IMAGE = "gitlab-registry.cern.ch/atlas/statanalysis@sha256:36a8c06ae90401e3629830c8ffe3b9fcf0b2a1841b28f59e4ecfa49c243051e1"
 CONTAINER_ENGINE = "podman-hpc"
 
-PROJECT_DIR = Path(os.environ.get("ATLASRL_PROJECT_DIR", Path(__file__).resolve().parents[1])).resolve()
+PROJECT_DIR = Path(os.environ.get("ATLASRL_PROJECT_DIR", Path(__file__).resolve().parent)).resolve()
 CONTAINER_PROJECT_DIR = "/workdir"
 
 
@@ -87,7 +88,9 @@ def discover_symlink_target_mounts() -> list[tuple[str, str]]:
     return sorted(mounts)
 
 
-def container_cmd(shell_command: str) -> list[str]:
+def container_cmd(
+    shell_command: str, *, discover_external_mounts: bool = True
+) -> list[str]:
     """
     Build a non-interactive podman-hpc command for TRExFitter.
 
@@ -98,8 +101,9 @@ def container_cmd(shell_command: str) -> list[str]:
     """
     mounts = [(str(PROJECT_DIR), CONTAINER_PROJECT_DIR, "rw")]
 
-    for src, dst in discover_symlink_target_mounts():
-        mounts.append((src, dst, "ro"))
+    if discover_external_mounts:
+        for src, dst in discover_symlink_target_mounts():
+            mounts.append((src, dst, "ro"))
 
     cmd = [
         CONTAINER_ENGINE,
@@ -135,31 +139,44 @@ def container_cmd(shell_command: str) -> list[str]:
     return cmd
 
 def run(cmd: list[str], label: str, log_dir: Path | None = None) -> None:
-    print(f"\n=== {label} ===")
-    print(quote_cmd(cmd))
+    """Run a command while streaming output and retaining separate log files."""
+    print(f"\n=== {label} ===", flush=True)
+    print(quote_cmd(cmd), flush=True)
 
-    result = subprocess.run(
+    process = subprocess.Popen(
         cmd,
         text=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=1,
     )
+
+    stdout: list[str] = []
+    stderr: list[str] = []
+
+    def copy_stream(source, destination, collected: list[str]) -> None:
+        for line in iter(source.readline, ""):
+            collected.append(line)
+            print(line, end="", file=destination, flush=True)
+        source.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(copy_stream, process.stdout, sys.stdout, stdout),
+            executor.submit(copy_stream, process.stderr, sys.stderr, stderr),
+        ]
+        returncode = process.wait()
+        for future in futures:
+            future.result()
 
     if log_dir is not None:
         log_dir.mkdir(parents=True, exist_ok=True)
         safe_label = label.replace(" ", "_").replace("/", "_")
-        (log_dir / f"{safe_label}.stdout.log").write_text(result.stdout)
-        (log_dir / f"{safe_label}.stderr.log").write_text(result.stderr)
+        (log_dir / f"{safe_label}.stdout.log").write_text("".join(stdout))
+        (log_dir / f"{safe_label}.stderr.log").write_text("".join(stderr))
 
-    if result.stdout:
-        print(result.stdout)
-
-    if result.returncode != 0:
-        if result.stderr:
-            print(result.stderr)
-        raise RuntimeError(f"{label} failed with exit code {result.returncode}")
-
-    if result.stderr:
-        print(result.stderr)
+    if returncode != 0:
+        raise RuntimeError(f"{label} failed with exit code {returncode}")
 
 
 def run_capture(cmd: list[str], label: str, log_dir: Path | None = None) -> subprocess.CompletedProcess[str]:
