@@ -203,30 +203,43 @@ Run the automated tests with pytest's structured, colored terminal output:
 uv run --locked --extra coffea pytest -v --color=yes
 ```
 
-## Optional JSON execution report
+## JSON reporting and timeouts
 
-`evaluate.py` wraps native execution and prints a machine-readable result;
-the input is still an ordinary TRExFitter `.config`, not JSON. It reports
-verification, success, exit code, elapsed time, log location, timeout status,
-and significance when present. Ordinary interactive analysis can use the
-runner directly.
+Use the same runner for execution and an optional machine-readable report:
 
 ```bash
-uv run --locked python -m trex_fitter.evaluate \
-  data/configs/examples/hyy.config --mock
+uv run --locked --extra coffea python -m trex_fitter.runner \
+  data/configs/examples/hyy.config --backend coffea --actions nwsf \
+  --coffea-workers 8 --output-dir artifacts/trex_fitter/run/output \
+  --log-dir artifacts/trex_fitter/run/logs \
+  --json artifacts/trex_fitter/run/result.json --timeout 3600
 ```
 
-`--mock` returns a deterministic test value, not a physics result. Without it,
-the evaluator delegates to the native runner, gating on `analysis_valid` while
-still reporting Coffea compatibility. `--actions`, `--log-dir`, and `--timeout`
-control the invocation; timeout defaults to 1200 seconds, shorter than a full
-native Hyy histogram run. It terminates the subprocess group on timeout and
-reads significance only from this invocation's output. This wrapper does not
-offer a Coffea backend or output-directory option; use the runner for those.
+Use `--json -` for JSON-only stdout; live output goes to stderr in that mode.
+Otherwise logs stream normally. The report includes success, child exit code,
+elapsed seconds, timeout status, backend/actions, output/log directories,
+errors, container-cleanup errors, and observed significance when found in this
+invocation's stdout. Missing or nonfinite significance is `null`; this is an
+execution report, not a physics-quality assessment or a config-verifier report.
 
-`python -m trex_fitter.evaluate` and `python -m trex_fitter.mock` replace the
-broken `scripts/evaluate_config.py` (which imported a missing `interface`
-module) and the old mock script. No compatibility wrappers are retained.
+`--timeout SECONDS` is optional (no limit by default) and covers the complete
+chain, including Python startup, Coffea processing/workers, and native stages.
+Supervision terminates the owned process group and forcibly removes containers
+identified by this invocation's CID files. Cleanup has a bounded grace period,
+so wall time can exceed the requested execution limit. A timeout exits 124;
+execution failures exit 1, while top-level argument errors use argparse's exit 2.
+Partial outputs are kept for diagnosis, not promoted to valid results.
+
+Reporting or timeout supervision creates a unique `run-*` directory below
+`--log-dir`, retaining `runner.stdout.log`, `runner.stderr.log`, native logs,
+and container IDs. It never scans old logs for significance. The supervisor
+invokes this same runner without its reporting/timeout options; there is no
+second execution CLI. It also supports `--check` and `--dry-run`; dry-run
+reports describe a plan, not a completed analysis.
+
+`evaluate.py`, the public `mock.py`/`--mock` mode, and the old runtime CLI
+were removed. Fake subprocesses live only in the tests. Static verification
+remains a separate command; native parsing is authoritative for native runs.
 
 ## Module ownership
 
@@ -235,18 +248,17 @@ module) and the old mock script. No compatibility wrappers are retained.
 | `config_format.py` | Shared config syntax/errors, without backend dependencies |
 | `config_verify.py`, `schema.py`, `semantics.py`, `input_checks.py` | Unified report, native schema, static semantics, optional input validation |
 | `runner.py` | Primary native/Coffea orchestration |
-| `evaluate.py`, `mock.py` | JSON execution reporting and deterministic testing |
-| `runtime.py` | Container commands, logging, result extraction, separate native CLI including parallel regions |
+| `runtime.py` | Reusable container, subprocess, timeout, logging, and result-parsing helpers; no CLI |
 | `coffea_backend/` | Histogram config, expressions, processing, writing, comparison, capability checking |
 | `scripts/fetch_hyy_inputs.sh` | Still-used Hyy input download helper |
 | `schemas/`, `../tests/trex_fitter/` | Pinned native schemas and regression tests |
 
-Use package commands: `python -m trex_fitter.runner`, `.config_verify`,
-and `.runtime` (each suffix expands after `trex_fitter`).
+Use `python -m trex_fitter.runner` for all analysis execution and
+`python -m trex_fitter.config_verify` for standalone verification.
 Import syntax helpers directly from `config_format`. `coffea_backend.verify`
 remains the internal capability checker; it does not replace the unified
-analysis verifier. The runtime's
-parallel-region CLI has functionality absent from the primary runner.
+analysis verifier. The older runtime CLI and its duplicate sequence/parallel-region
+orchestration were retired.
 
 The redundant `scripts/trex.py` and unused structural-only `verifier.py` were
 retired.

@@ -12,10 +12,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import shlex
 import sys
+import tempfile
+import time
+import uuid
 from pathlib import Path
 
 
@@ -28,8 +32,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(PROJECT_DIR))
 from trex_fitter import runtime as podman_trex  # noqa: E402
 
-# The runtime module is also usable standalone, while this runner mounts
-# the repository root so configs, inputs, and ignored artifacts share /workdir.
+# Mount the repository root so configs, inputs, and artifacts share /workdir.
 podman_trex.PROJECT_DIR = PROJECT_DIR
 
 
@@ -110,16 +113,26 @@ def container_cmd(command: str) -> list[str]:
     return command_line
 
 
-def check_setup() -> None:
+def native_command(command: str, log_dir: Path | None) -> list[str]:
+    cmd = container_cmd(command)
+    if log_dir is not None:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        cid = log_dir.resolve() / f"container-{uuid.uuid4().hex}.cid"
+        cmd[2:2] = ["--cidfile", str(cid)]
+    return cmd
+
+
+def check_setup(log_dir: Path | None = None) -> None:
     podman_trex.run(
-        container_cmd(
+        native_command(
             "which trex-fitter && "
             "test -d /workdir/inputs && "
             "test -d /workdir/inputs/examples && "
             "test -d /workdir/inputs/hyy && "
-            "echo 'TRExFitter and bundled inputs are available.'"
+            "echo 'TRExFitter and bundled inputs are available.'", log_dir
         ),
         label="check TRExFitter runner",
+        log_dir=log_dir,
     )
 
 
@@ -182,15 +195,110 @@ def run_actions(
         f"{shlex.quote(config_for_run)}"
     )
     podman_trex.run(
-        container_cmd(command),
+        native_command(command, log_dir),
         label=f"trex-fitter {combined_actions} {path.name}",
         log_dir=log_dir,
     )
 
 
+def worker_command(args, log_dir: Path) -> list[str]:
+    """Re-enter this same CLI without supervision options; no second CLI."""
+    command = [sys.executable, str(Path(__file__).resolve())]
+    if args.config is not None:
+        command.append(str(config_path(args.config)))
+    if args.actions:
+        command.extend(["--actions", *args.actions])
+    for name in ("backend", "coffea_workers", "coffea_chunksize", "coffea_maxchunks",
+                 "coffea_schema", "coffea_stage_dir", "output_dir"):
+        value = getattr(args, name)
+        if value is not None:
+            command.extend(["--" + name.replace("_", "-"), str(value)])
+    for name in ("check", "validate_all", "dry_run"):
+        if getattr(args, name):
+            command.append("--" + name.replace("_", "-"))
+    if not args.compatibility_mode:
+        command.append("--no-compatibility-mode")
+    command.extend(["--log-dir", str(log_dir)])
+    return command
+
+
+def supervised_run(args, parser) -> None:
+    """Report/timeout the entire chain, including Coffea and native workers."""
+    try:
+        path = config_path(args.config) if args.config else None
+        actions = list("".join(args.actions or default_actions(path))) if path else []
+    except ValueError as error:
+        parser.error(str(error))
+    if path is None and not (args.check or args.validate_all):
+        parser.error("config is required unless --check or --validate-all is used")
+    if args.json_path not in (None, "-") and path == Path(args.json_path).resolve():
+        parser.error("the JSON report must not overwrite the input config")
+    root = (args.log_dir or PROJECT_DIR / "artifacts" / "trex_fitter" /
+            (path.stem if path else "check")).resolve()
+    # A new directory prevents stale logs/CIDs from affecting this invocation.
+    root.mkdir(parents=True, exist_ok=True)
+    log_dir = Path(tempfile.mkdtemp(prefix="run-", dir=root))
+    def cleanup():
+        errors = []
+        for cid in log_dir.glob("container-*.cid"):
+            try:
+                podman_trex.remove_container(cid)
+            except Exception as error:
+                errors.append(str(error))
+        if errors:
+            raise RuntimeError("; ".join(errors))
+
+    report = {
+        "config": str(path) if path else None, "backend": args.backend,
+        "actions": actions, "success": False, "returncode": None,
+        "timed_out": False, "significance": None, "error": None,
+        "cleanup_error": None,
+        "dry_run": args.dry_run, "log_dir": str(log_dir),
+        "output_dir": str(log_dir / "multifit-work") if path and read_from(path) == "MULTIFIT"
+                      else str((args.output_dir or PROJECT_DIR).resolve()),
+    }
+    started = time.monotonic()
+    try:
+        result = podman_trex.run(
+            worker_command(args, log_dir), label="runner", log_dir=log_dir,
+            timeout=args.timeout, start_new_session=True, check=False,
+            output_stream=sys.stderr if args.json_path == "-" else sys.stdout,
+            cleanup=cleanup,
+        )
+        report.update(returncode=result.returncode, timed_out=result.timed_out,
+                      success=result.returncode == 0 and not result.timed_out,
+                      cleanup_error=result.cleanup_error)
+        if report["success"] and not args.dry_run:
+            report["significance"] = podman_trex.parse_significance_from_text(result.stdout)
+        if result.timed_out:
+            report["error"] = f"Execution exceeded {args.timeout} seconds"
+        elif result.returncode:
+            report["error"] = f"Execution failed with exit code {result.returncode}"
+    except Exception as error:
+        report["error"] = str(error)
+    report["elapsed_seconds"] = time.monotonic() - started
+    if args.json_path is not None:
+        rendered = json.dumps(report, indent=2, allow_nan=False) + "\n"
+        if args.json_path == "-":
+            print(rendered, end="")
+        else:
+            destination = Path(args.json_path)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(rendered)
+    if report["error"]:
+        print(report["error"], file=sys.stderr)
+    if report["cleanup_error"]:
+        print(report["cleanup_error"], file=sys.stderr)
+    raise SystemExit(124 if report["timed_out"] else 0 if report["success"] else 1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config", nargs="?", help="Config path relative to the repository root.")
+    parser.add_argument("--json", dest="json_path", metavar="PATH",
+                        help="Write an execution report to PATH; use - for JSON-only stdout.")
+    parser.add_argument("--timeout", type=float, metavar="SECONDS",
+                        help="Wall-time limit for the entire chain; default: no limit.")
     parser.add_argument(
         "--actions",
         nargs="+",
@@ -260,8 +368,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.timeout is not None and (not math.isfinite(args.timeout) or args.timeout <= 0):
+        parser.error("--timeout must be a positive finite number")
+    if args.json_path is not None or args.timeout is not None:
+        supervised_run(args, parser)
+
     if args.check:
-        check_setup()
+        check_setup(args.log_dir)
 
     if args.validate_all:
         for example in sorted(EXAMPLE_DIR.glob("*.config")):
@@ -312,7 +425,7 @@ def main() -> None:
     remaining_actions = actions
     trex_work_dir = (
         args.output_dir.resolve()
-        if args.backend == "coffea" and args.output_dir is not None
+        if args.output_dir is not None
         else None
     )
     if args.backend == "coffea" and "n" in actions:
