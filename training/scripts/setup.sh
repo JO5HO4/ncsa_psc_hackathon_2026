@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Source this inside the VERL container:
-#   source training/setup.sh
+#   source training/scripts/setup.sh
 #
 # This prepares the current container session for training. It does not bake a
-# new image; container changes are lost after exiting because training/container.sh uses
+# new image; container changes are lost after exiting because training/scripts/container.sh uses
 # podman-hpc run --rm.
 
 set -euo pipefail
@@ -13,7 +13,7 @@ set -euo pipefail
 unset VIRTUAL_ENV
 
 if [ ! -d /workspace/verl ]; then
-  echo "Expected /workspace/verl. Start the container from the repo root with: source training/container.sh" >&2
+  echo "Expected /workspace/verl. Start the container from the repo root with: bash training/scripts/container.sh" >&2
   return 1 2>/dev/null || exit 1
 fi
 
@@ -58,7 +58,7 @@ import verl
 if importlib.util.find_spec("transformers.models.qwen3_5") is None:
     raise RuntimeError(
         "This container cannot load Qwen3.5. Start the pinned image with "
-        "bash training/container.sh (or set VERL_IMAGE to a compatible image)."
+        "bash training/scripts/container.sh (or set VERL_IMAGE to a compatible image)."
     )
 
 print("verl:", verl.__file__)

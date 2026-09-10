@@ -41,14 +41,14 @@ Use the same Qwen3.5 container session as training. The setup command creates
 the node-local uv environment used by every inference command below:
 
 ```bash
-bash training/container.sh
-source training/setup.sh
+bash training/scripts/container.sh
+source training/scripts/setup.sh
 ```
 
 Run the examples with `uv run --project /workspace/verl --no-sync python`;
 using the container's system `python` bypasses the Qwen3.5-compatible runtime.
 The first Qwen3.5-9B run downloads about 19 GB into `/hf_cache`, mapped by
-`training/container.sh` to `$PSCRATCH/qwen35-hf-cache`; a restart resumes it.
+`training/scripts/container.sh` to `$PSCRATCH/qwen35-hf-cache`; a restart resumes it.
 Do not use Perlmutter's RAM-backed `/tmp` for this cache. The launcher disables
 Xet transfers for large downloads in this Podman-HPC environment. It also maps
 the container's `/tmp` to `$PSCRATCH/qwen35-container-tmp`, so interrupted
@@ -150,6 +150,66 @@ override it only with
 Qwen3.5 thinking mode is disabled by default so the completion contains the
 answer rather than a reasoning trace; use `--enable-thinking` only when that
 trace is explicitly wanted.
+
+## ATLAS ROOT zero-shot query benchmark
+
+The public benchmark lives in the `atlas-open-data-sft-dataset` submodule.
+For a direct base-model baseline, first generate completions for its eight
+query tasks. The prompts request a short final answer; this measures ROOT
+knowledge without granting the model tool execution:
+
+```bash
+uv run --project /workspace/verl --no-sync python inference/run_prompts.py \
+  --model Qwen/Qwen3.5-0.8B \
+  --prompts /workspace/data/datasets/atlas-open-data-sft-dataset/data/tasks/query_tasks.jsonl \
+  --prompt-field question \
+  --id-field id \
+  --format chat \
+  --no-enable-thinking \
+  --system-prompt "Reply with only the requested final answer. Do not explain your reasoning." \
+  --device cuda \
+  --temperature 0 \
+  --max-new-tokens 32 \
+  --output /workspace/artifacts/inference/atlas-root-qwen35-0.8b-query.jsonl
+```
+
+Then score the output using the dataset's own verifier:
+
+```bash
+python inference/evaluate_atlas_benchmark.py \
+  --completions /workspace/artifacts/inference/atlas-root-qwen35-0.8b-query.jsonl \
+  --dataset-root /workspace/data/datasets/atlas-open-data-sft-dataset \
+  --output /workspace/artifacts/inference/atlas-root-qwen35-0.8b-query-score.json
+```
+
+This scores all eight query tasks. The three artifact tasks require a future
+agent runner that lets the model call `bash`, write a macro, and invoke
+`verify_task.py`; they cannot be fairly scored from one-shot text generation.
+
+To evaluate command synthesis instead, first build the dedicated prompts on
+the host or in the container:
+
+```bash
+python3 /workspace/data/datasets/atlas-open-data-sft-dataset/tools/tasks/build_command_prompts.py \
+  --tasks /workspace/data/datasets/atlas-open-data-sft-dataset/data/tasks/query_tasks.jsonl \
+  --manifest /workspace/data/datasets/atlas-open-data-sft-dataset/data/fixtures/manifest.json \
+  --dataset-root /workspace/data/datasets/atlas-open-data-sft-dataset \
+  --output /workspace/artifacts/inference/atlas-root-command-prompts.jsonl
+```
+
+Run that file with `--prompt-field prompt` and a system instruction to return
+only the command. These completions are commands for a user or agent to
+execute; do not score them with `evaluate_atlas_benchmark.py`, which expects
+final numerical/text answers.
+
+Attach the expected command and result to a copy of a command-generation run:
+
+```bash
+uv run --project /workspace/verl --no-sync python /workspace/inference/attach_atlas_references.py \
+  --completions /workspace/artifacts/inference/atlas-root-qwen35-9b-commands-raw.jsonl \
+  --dataset-root /workspace/data/datasets/atlas-open-data-sft-dataset \
+  --output /workspace/artifacts/inference/atlas-root-qwen35-9b-commands.jsonl
+```
 
 ## Hugging Face Dataset input
 

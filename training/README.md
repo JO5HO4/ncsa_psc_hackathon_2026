@@ -26,6 +26,17 @@ scripts in [`inference/`](../inference/README.md).
 Both launchers use Qwen3.5. The RL launcher still requires a separately
 prepared RL task parquet and reward function based on TReX runner artifacts.
 
+## ROOT runtime
+
+On Perlmutter, `training/scripts/root_runtime.sh` starts the lightweight CVMFS
+ROOT 6.34.02 environment without using its incompatible Python executable.
+Use it for ROOT commands or for Python tools that need ROOT available:
+
+```bash
+training/scripts/root_runtime.sh root --version
+training/scripts/root_runtime.sh --python data/datasets/atlas-open-data-sft-dataset/tools/check-data/validate_dataset.py
+```
+
 ## ROOT task dataset
 
 [`data/datasets/root-sft-dataset/`](../data/datasets/root-sft-dataset/) is an
@@ -70,7 +81,7 @@ bash data/fetch_reference_datasets.sh
 From the repository root in a GPU session, start the supplied verl container:
 
 ```bash
-bash training/container.sh
+bash training/scripts/container.sh
 ```
 
 The launcher pins a Qwen3.5-capable verl image by digest. Its first start pulls
@@ -83,7 +94,7 @@ prints the active Torch, Transformers, SGLang, CUDA, and Qwen3.5 support
 status. It fails early if the image cannot load Qwen3.5:
 
 ```bash
-source training/setup.sh
+source training/scripts/setup.sh
 ```
 
 Model downloads are cached at `/hf_cache`, a bind mount to
@@ -91,7 +102,7 @@ Model downloads are cached at `/hf_cache`, a bind mount to
 This keeps a 19 GB checkpoint outside both the container writable layer and
 Perlmutter's RAM-backed `/tmp`. An interrupted download resumes across
 container and node restarts. Set `HF_CACHE_HOST=/path/on/disk` before
-`container.sh` to override the host cache location.
+`scripts/container.sh` to override the host cache location.
 
 The launcher disables the optional Xet transfer client (`HF_HUB_DISABLE_XET=1`)
 because it can terminate Podman-HPC containers during large checkpoint
@@ -163,9 +174,9 @@ Qwen3.5 RL experiment; the 0.8B model can otherwise overthink or loop.
 
 - `bootstrap_verl.sh` initializes the linked verl repository for an existing
   clone.
-- `container.sh` opens the GPU-enabled verl container with this repository at
+- `scripts/container.sh` opens the GPU-enabled verl container with this repository at
   `/workspace`.
-- `setup.sh` installs that local checkout and verifies Qwen3.5 support.
+- `scripts/setup.sh` installs that local checkout and verifies Qwen3.5 support.
 - `scripts/qwen35_profile.sh` selects the validated `0.8b` or `9b` model
   profile shared by SFT and RL.
 - `scripts/run_verl_sft.sh` runs Qwen3.5 SFT.

@@ -20,6 +20,9 @@ For an existing clone, initialize the dependency:
 git submodule update --init --recursive
 ```
 
+Submodules use public HTTPS URLs by default. Contributors who prefer SSH can
+override them locally; see [the ATLAS workflow](docs/ATLAS_WORKFLOW.md).
+
 `bash training/bootstrap_verl.sh` remains available when only the training
 dependency needs to be initialized. Download the reference training Parquet
 files directly from Hugging Face when needed:
@@ -55,6 +58,7 @@ The local `.venv/` is ignored; commit dependency changes with the lockfile.
 | [trex_fitter/](trex_fitter/) | The code that checks and runs configs |
 | [training/](training/README.md) | Training with verl |
 | [inference/](inference/README.md) | Testing a trained model |
+| [docs/ATLAS_WORKFLOW.md](docs/ATLAS_WORKFLOW.md) | Reproduce the ATLAS command benchmark |
 | [docs/](docs/HACKATHON.md) | The plan and task list |
 
 Start with the [hackathon plan](docs/HACKATHON.md), then pick a task from the [task board](docs/TASK_BOARD.md).
