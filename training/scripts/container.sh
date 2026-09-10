@@ -1,4 +1,4 @@
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SHM_SIZE="${SHM_SIZE:-16g}"
 IPC_MODE="${IPC_MODE:-host}"
 # This digest resolves to the linux/amd64 image. It is intentionally pinned:
