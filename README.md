@@ -28,12 +28,31 @@ files directly from Hugging Face when needed:
 bash data/fetch_reference_datasets.sh
 ```
 
+## Host-side Python environment
+
+Use the committed `pyproject.toml`, `uv.lock`, and Python 3.11 pin for host-side
+analysis tooling. On NERSC:
+
+```bash
+module load python
+uv sync --locked
+uv run --locked pytest -v --color=yes
+```
+
+Default dependencies are NumPy, Awkward, and Pydantic, plus pytest in the
+development group. Optional extras separate ROOT-file metadata (`inputs`),
+histogramming (`coffea`), and the optional ATLAS collection schema
+(`atlas-schema`). Select extras explicitly in both `uv sync` and `uv run`.
+These dependencies do not install ROOT or TRExFitter; those remain in the
+existing container. Training/inference keep their separate verl environment.
+The local `.venv/` is ignored; commit dependency changes with the lockfile.
+
 ## Main folders
 
 | Folder | What it is for |
 | --- | --- |
 | [data/](data/README.md) | Dataset families, fixtures, and publishing conventions |
-| [trex_fitter/](trex_fitter/README.md) | The code that checks and runs configs |
+| [trex_fitter/](trex_fitter/) | The code that checks and runs configs |
 | [training/](training/README.md) | Training with verl |
 | [inference/](inference/README.md) | Testing a trained model |
 | [docs/](docs/HACKATHON.md) | The plan and task list |
