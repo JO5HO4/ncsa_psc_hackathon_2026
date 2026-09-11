@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Plain-language entry point for the ROOT SFT experiment workflow.
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "$repo_root/tools/root_sft.py" "$@"

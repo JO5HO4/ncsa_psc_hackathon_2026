@@ -29,6 +29,8 @@ podman-hpc run --rm -it --gpu --entrypoint= \
   -e HF_ASSETS_CACHE=/hf_cache/assets \
   -e HF_XET_CACHE=/hf_cache/xet \
   -e HF_HUB_DISABLE_XET=1 \
+  -e HF_TOKEN \
+  -e ROOT_SFT_IN_CONTAINER=1 \
   -e UV_CACHE_DIR=/hf_cache/uv \
   -e TMPDIR=/tmp \
   -w /workspace \

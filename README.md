@@ -50,6 +50,57 @@ These dependencies do not install ROOT or TRExFitter; those remain in the
 existing container. Training/inference keep their separate verl environment.
 The local `.venv/` is ignored; commit dependency changes with the lockfile.
 
+## ROOT SFT workflow
+
+Use [`root-sft`](root-sft) for the ROOT SFT benchmark workflow. It stores each
+experiment and its outputs together, so a run can be inspected or resumed by
+name instead of reconstructing paths and environment variables:
+
+```bash
+./root-sft check
+./root-sft train --model qwen3.5-0.8b --epochs 10 --run qwen08-10ep
+./root-sft infer --run qwen08-10ep
+./root-sft score --run qwen08-10ep
+./root-sft plot --run qwen08-10ep
+```
+
+Run `train` and `infer` inside `bash training/scripts/container.sh`. Run
+`score` from an ATLAS ROOT shell:
+
+```bash
+source /global/cfs/cdirs/atlas/scripts/setupATLAS.sh
+setupATLAS -c centos7+batch
+lsetup "root 6.30.02-x86_64-centos7-gcc11-opt"
+```
+
+If you have a Hugging Face token, export `HF_TOKEN` before starting the GPU
+container. The container passes it through for authenticated downloads; the
+token is never written to a run record or log.
+
+`plot` runs on the host and needs the reporting dependencies:
+
+```bash
+uv sync --locked --extra reports
+```
+
+If a training command finishes its epochs but the final export handoff fails,
+run `./root-sft finalize --run RUN` rather than training again. If ROOT
+evaluation finishes but its report cannot be built in the ROOT shell, run
+`./root-sft report --run RUN` on the host, then `./root-sft plot --run RUN`.
+For one-step scoring, `score` checks that its report Python can import
+`pyarrow.parquet` first; provide a compatible interpreter with
+`--report-python PATH` when needed.
+
+Use `./root-sft runs`, `show RUN`, `logs RUN`, and `compare RUN_A RUN_B` to
+manage named runs. `latest` is a shortcut for the newest validated run.
+If ROOT is unavailable, `./root-sft score --run RUN --use-cvmfs-root` selects
+the existing CVMFS fallback runtime.
+
+For an opt-in GPU integration check, start the training container and run
+`bash tests/root_sft_gpu_smoke.sh`. It performs one small training run, verifies
+its export through the normal training command, and writes one held-out
+completion set.
+
 ## Main folders
 
 | Folder | What it is for |
