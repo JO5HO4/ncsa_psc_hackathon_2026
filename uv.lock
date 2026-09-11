@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.11.*"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -852,6 +852,10 @@ coffea = [
 inputs = [
     { name = "uproot" },
 ]
+reports = [
+    { name = "matplotlib" },
+    { name = "pyarrow" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -864,12 +868,14 @@ requires-dist = [
     { name = "awkward", specifier = ">=2.8,<3" },
     { name = "coffea", marker = "extra == 'coffea'", specifier = "==2025.7.0" },
     { name = "hist", marker = "extra == 'coffea'", specifier = ">=2.8,<3" },
+    { name = "matplotlib", marker = "extra == 'reports'", specifier = ">=3.8,<4" },
     { name = "numpy", specifier = ">=1.26,<3" },
+    { name = "pyarrow", marker = "extra == 'reports'", specifier = "==25.0.1" },
     { name = "pydantic", specifier = "==2.11.7" },
     { name = "uproot", marker = "extra == 'coffea'", specifier = ">=5.6,<6" },
     { name = "uproot", marker = "extra == 'inputs'", specifier = ">=5.6,<6" },
 ]
-provides-extras = ["inputs", "coffea", "atlas-schema"]
+provides-extras = ["inputs", "coffea", "atlas-schema", "reports"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8,<10" }]

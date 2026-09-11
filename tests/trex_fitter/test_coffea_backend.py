@@ -5,10 +5,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+import pytest
+
 import awkward as ak
-import hist
 import numpy as np
-import uproot
+
+hist = pytest.importorskip("hist", reason="install the coffea test extra to run histogram backend tests")
+uproot = pytest.importorskip("uproot", reason="install the coffea test extra to run histogram backend tests")
 
 from trex_fitter.coffea_backend.backend import _stage_files
 from trex_fitter.coffea_backend.config import parse_config
