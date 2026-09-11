@@ -73,11 +73,23 @@ setupATLAS -c centos7+batch
 lsetup "root 6.30.02-x86_64-centos7-gcc11-opt"
 ```
 
+If you have a Hugging Face token, export `HF_TOKEN` before starting the GPU
+container. The container passes it through for authenticated downloads; the
+token is never written to a run record or log.
+
 `plot` runs on the host and needs the reporting dependencies:
 
 ```bash
 uv sync --locked --extra reports
 ```
+
+If a training command finishes its epochs but the final export handoff fails,
+run `./root-sft finalize --run RUN` rather than training again. If ROOT
+evaluation finishes but its report cannot be built in the ROOT shell, run
+`./root-sft report --run RUN` on the host, then `./root-sft plot --run RUN`.
+For one-step scoring, `score` checks that its report Python can import
+`pyarrow.parquet` first; provide a compatible interpreter with
+`--report-python PATH` when needed.
 
 Use `./root-sft runs`, `show RUN`, `logs RUN`, and `compare RUN_A RUN_B` to
 manage named runs. `latest` is a shortcut for the newest validated run.

@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -54,7 +55,27 @@ def atomic_json(path: Path, value: Any) -> None:
 def registry_lock() -> Iterator[None]:
     ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
     with LOCK_PATH.open("a+") as handle:
-        fcntl.flock(handle, fcntl.LOCK_EX)
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX)
+        except OSError:
+            # Lustre mounts exposed through Podman-HPC can reject flock with
+            # EREMOTEIO. mkdir is atomic on the shared filesystem and keeps
+            # host and container writers coordinated in that case.
+            lock_dir = LOCK_PATH.with_suffix(".lockdir")
+            deadline = time.monotonic() + 60
+            while True:
+                try:
+                    lock_dir.mkdir()
+                    break
+                except FileExistsError:
+                    if time.monotonic() >= deadline:
+                        raise RuntimeError("Another root-sft command is still updating the run registry.")
+                    time.sleep(0.1)
+            try:
+                yield
+            finally:
+                lock_dir.rmdir()
+            return
         try:
             yield
         finally:
@@ -94,6 +115,37 @@ def stored_path(path: Path) -> str:
 def saved_path(value: str | Path) -> Path:
     path = Path(value)
     return path if path.is_absolute() else REPO_ROOT / path
+
+
+def report_python(requested: str | None, *, dry_run: bool) -> str:
+    """Return a Python interpreter that can build the Parquet score report."""
+    candidates = (
+        requested,
+        os.environ.get("ROOT_SFT_REPORT_PYTHON"),
+        str(REPO_ROOT / ".venv/bin/python"),
+        sys.executable,
+    )
+    if dry_run:
+        return next(candidate for candidate in candidates if candidate)
+    tried: list[str] = []
+    for candidate in candidates:
+        if not candidate or candidate in tried:
+            continue
+        tried.append(candidate)
+        try:
+            probe = subprocess.run(
+                [candidate, "-c", "import pyarrow.parquet"],
+                capture_output=True,
+            )
+        except OSError:
+            continue
+        if probe.returncode == 0:
+            return candidate
+    raise RuntimeError(
+        "A working report Python with PyArrow is required. Set "
+        "ROOT_SFT_REPORT_PYTHON before entering the ROOT container, or pass "
+        "--report-python PATH. Tried: " + ", ".join(tried)
+    )
 
 
 def validate_run_name(value: str) -> str:
@@ -237,8 +289,19 @@ def execute(command: list[str], *, log: Path, cwd: Path | None = None, timeout: 
         log.write_text("DRY RUN\n" + " ".join(command) + "\n", encoding="utf-8")
         return 0
     with log.open("w", encoding="utf-8") as handle:
-        completed = subprocess.run(command, cwd=cwd, env=env, stdout=handle, stderr=subprocess.STDOUT, timeout=timeout)
-    return completed.returncode
+        process = subprocess.Popen(command, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        try:
+            assert process.stdout is not None
+            for line in process.stdout:
+                handle.write(line)
+                handle.flush()
+                sys.stdout.write(line)
+                sys.stdout.flush()
+            return process.wait(timeout=timeout)
+        except BaseException:
+            process.kill()
+            process.wait()
+            raise
 
 
 def profile_for(model: str) -> str:
@@ -279,6 +342,10 @@ def cmd_check(args: argparse.Namespace) -> int:
 def cmd_train(args: argparse.Namespace) -> int:
     model = args.model
     profile = profile_for(model)
+    learning_rate = getattr(args, "learning_rate", 1e-5)
+    batch_size = getattr(args, "batch_size", 16)
+    lora_rank = getattr(args, "lora_rank", 16)
+    lora_alpha = getattr(args, "lora_alpha", 16)
     run_id = args.run or generated_run_id(model)
     if args.force and args.resume:
         raise ValueError("Choose either --resume or --force, not both.")
@@ -305,11 +372,15 @@ def cmd_train(args: argparse.Namespace) -> int:
         inputs = dataset_inputs()
         if any("test.parquet" in str(path) for path in (inputs["train"], inputs["validation"])):
             raise ValueError("Training may only use the train and validation splits.")
-        record = update_run(record, "training", training={"epochs": args.epochs, "profile": profile, "train_file": str(inputs["train"]), "validation_file": str(inputs["validation"])})
+        record = update_run(record, "training", training={"epochs": args.epochs, "profile": profile, "learning_rate": learning_rate, "batch_size": batch_size, "lora_rank": lora_rank, "lora_alpha": lora_alpha, "save_frequency": "after_each_epoch", "test_frequency": "after_each_epoch", "train_file": stored_path(inputs["train"]), "validation_file": stored_path(inputs["validation"])})
         env = os.environ.copy()
-        env.update({"QWEN35_MODEL_SIZE": profile, "TOTAL_EPOCHS": str(args.epochs), "TRAIN_FILE": str(inputs["train"]), "VAL_FILE": str(inputs["validation"]), "SAVE_DIR": str(saved_path(record["paths"]["checkpoint"])), "EXPERIMENT_NAME": run_id})
+        env.update({"QWEN35_MODEL_SIZE": profile, "TOTAL_EPOCHS": str(args.epochs), "LR": str(learning_rate), "TRAIN_BATCH_SIZE": str(batch_size), "LORA_RANK": str(lora_rank), "LORA_ALPHA": str(lora_alpha), "SAVE_FREQ": "after_each_epoch", "TEST_FREQ": "after_each_epoch", "TRAIN_FILE": str(inputs["train"]), "VAL_FILE": str(inputs["validation"]), "SAVE_DIR": str(saved_path(record["paths"]["checkpoint"])), "EXPERIMENT_NAME": run_id})
         code = execute(["bash", str(REPO_ROOT / "training/scripts/run_verl_sft.sh")], log=log, env=env, dry_run=args.dry_run)
         if code:
+            tracker = saved_path(record["paths"]["checkpoint"]) / "latest_checkpointed_iteration.txt"
+            if tracker.is_file() and tracker.read_text(encoding="utf-8").strip().isdigit():
+                print("Training returned a nonzero status after saving a checkpoint; exporting that completed checkpoint.")
+                return cmd_finalize(argparse.Namespace(run=record["id"], dry_run=args.dry_run))
             fail_run(record, "training", code, log, "Training stopped before an export was validated.")
             return code
         record = update_run(record, "checkpointed")
@@ -362,6 +433,38 @@ def cmd_infer(args: argparse.Namespace) -> int:
         return 2
 
 
+def cmd_finalize(args: argparse.Namespace) -> int:
+    """Export a checkpoint after a trainer completed but its shell handoff failed."""
+    record = load_run(args.run)
+    checkpoint_root = saved_path(record["paths"]["checkpoint"])
+    tracker = checkpoint_root / "latest_checkpointed_iteration.txt"
+    if not tracker.is_file() or not tracker.read_text(encoding="utf-8").strip().isdigit():
+        raise ValueError("No completed checkpoint was found for this run.")
+    step = tracker.read_text(encoding="utf-8").strip()
+    checkpoint = checkpoint_root / f"global_step_{step}"
+    if not checkpoint.is_dir():
+        raise ValueError(f"Checkpoint directory is missing: {checkpoint}")
+    log = command_log(record, "finalize")
+    require_verl_container()
+    record = update_run(record, "checkpointed")
+    env = os.environ.copy()
+    base_model = record["model_revision"]["resolved"]
+    export = ["uv", "run", "--project", str(REPO_ROOT / "verl"), "--frozen", "--extra", "fsdp", "--extra", "sglang", "python", str(REPO_ROOT / "inference/export_verl_lora_adapter.py"), "--checkpoint", str(checkpoint), "--base-model", base_model]
+    code = execute(export, log=log, env=env, dry_run=args.dry_run)
+    if code:
+        fail_run(record, "adapter export", code, log, "Checkpoint export failed.")
+        return code
+    record = update_run(record, "exported")
+    validate = ["uv", "run", "--project", str(REPO_ROOT / "verl"), "--frozen", "--extra", "fsdp", "--extra", "sglang", "python", str(REPO_ROOT / "inference/validate_model_export.py"), str(checkpoint / "huggingface")]
+    code = execute(validate, log=log, env=env, dry_run=args.dry_run)
+    if code:
+        fail_run(record, "export validation", code, log, "The exported checkpoint did not validate.")
+        return code
+    update_run(record, "validated", eligible=True, inference_model=stored_path(checkpoint / "huggingface"), validation={"log": stored_path(log), "checkpoint_step": int(step)})
+    print(f"Checkpoint export is ready. Next: ./root-sft infer --run {record['id']}")
+    return 0
+
+
 def cmd_score(args: argparse.Namespace) -> int:
     record = load_run(args.run, require_eligible=True)
     completions = saved_path(record.get("completions") or saved_path(record["paths"]["completions"]) / "test.jsonl")
@@ -369,8 +472,10 @@ def cmd_score(args: argparse.Namespace) -> int:
         raise ValueError(f"No completions found for '{record['id']}'. Run './root-sft infer --run {record['id']}' first.")
     if not shutil.which("root") and not args.use_cvmfs_root:
         raise RuntimeError("Scoring needs ROOT. Start the ATLAS ROOT shell, run lsetup, then retry; use --use-cvmfs-root only for the fallback runtime.")
-    if not shutil.which("bwrap") and not args.dry_run:
-        raise RuntimeError("Scoring generated commands needs bubblewrap isolation. Install bwrap, then retry.")
+    apptainer_isolated = bool(os.environ.get("APPTAINER_CONTAINER"))
+    if not shutil.which("bwrap") and not (getattr(args, "allow_unsandboxed_score", False) or apptainer_isolated) and not args.dry_run:
+        raise RuntimeError("Scoring generated commands needs bubblewrap isolation. Install bwrap, or explicitly use --allow-unsandboxed-score in an already isolated environment.")
+    report_interpreter = report_python(getattr(args, "report_python", None), dry_run=args.dry_run)
     log = command_log(record, "score")
     output = saved_path(record["paths"]["benchmark"])
     record = update_run(record, "scored")
@@ -379,6 +484,7 @@ def cmd_score(args: argparse.Namespace) -> int:
         env["ROOT_USE_CURRENT"] = "0"
     else:
         env["ROOT_USE_CURRENT"] = "1"
+    env["PYTHON_BIN"] = report_interpreter
     with tempfile.TemporaryDirectory(prefix=f"root-sft-score-{record['id']}-") as sandbox:
         env["TMPDIR"] = sandbox
         # The benchmark evaluates model-produced commands. Give it a read-only
@@ -420,6 +526,22 @@ def cmd_plot(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_report(args: argparse.Namespace) -> int:
+    record = load_run(args.run)
+    benchmark = saved_path(record["paths"]["benchmark"])
+    executed = benchmark / f"{record['id']}-executed.jsonl"
+    if not executed.is_file():
+        raise ValueError("No executed completions were found. Run score first.")
+    log = command_log(record, "report")
+    command = ["uv", "run", "--project", str(REPO_ROOT), "--extra", "reports", "--locked", "python", str(DATASET_ROOT / "tools/benchmark/build_report.py"), "--dataset", str(DATASET_ROOT / "data/sft/test.parquet"), "--expected", str(DATASET_ROOT / "benchmark/expected-results/test.jsonl"), "--completion", f"{record['id']}={executed}", "--output-json", str(benchmark / f"{record['id']}-report.json"), "--output-csv", str(benchmark / f"{record['id']}-report.csv"), "--summary-csv", str(benchmark / f"{record['id']}-summary.csv")]
+    code = execute(command, log=log, dry_run=args.dry_run)
+    if code:
+        return code
+    update_run(record, "scored", eligible=True, report=stored_path(benchmark / f"{record['id']}-report.json"), summary=stored_path(benchmark / f"{record['id']}-summary.csv"))
+    print(f"Report is ready. Next: ./root-sft plot --run {record['id']}")
+    return 0
+
+
 def cmd_runs(_: argparse.Namespace) -> int:
     registry = read_registry()
     if not registry["runs"]:
@@ -453,7 +575,7 @@ def cmd_resume(args: argparse.Namespace) -> int:
     settings = record.get("training")
     if not settings:
         raise ValueError("This failed run was not a training run. Inspect its log with './root-sft logs RUN'.")
-    return cmd_train(argparse.Namespace(model=record["model"], epochs=settings["epochs"], run=record["id"], seed=record.get("seed"), resume=True, force=False, dry_run=args.dry_run))
+    return cmd_train(argparse.Namespace(model=record["model"], epochs=settings["epochs"], learning_rate=settings.get("learning_rate", 1e-5), batch_size=settings.get("batch_size", 16), lora_rank=settings.get("lora_rank", 16), lora_alpha=settings.get("lora_alpha", 16), run=record["id"], seed=record.get("seed"), resume=True, force=False, dry_run=args.dry_run))
 
 
 def cmd_compare(args: argparse.Namespace) -> int:
@@ -487,17 +609,26 @@ def parser() -> argparse.ArgumentParser:
     commands = root.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="Check what this machine can do.", description="Check the repository, data, workspace, and optional runtimes.", epilog="Run on: host.\nExample: ./root-sft check", formatter_class=formatter)
     check.set_defaults(func=cmd_check)
-    train = commands.add_parser("train", help="Train a ROOT SFT model in the GPU container.", description="Train a named model run and save its checkpoint and details together.", epilog="Run on: GPU container.\nExample: ./root-sft train --model qwen3.5-0.8b --epochs 10 --run my-run\nOutput: a validated run when export succeeds.", formatter_class=formatter)
+    train = commands.add_parser("train", help="Train a ROOT SFT model in the GPU container.", description="Train a named model run and save its checkpoint and details together. Console output is also saved to the run log.", epilog="Run on: GPU container.\nExample: ./root-sft train --model qwen3.5-0.8b --epochs 3 --learning-rate 1e-4 --batch-size 8 --run my-run\nOutput: a validated run when export succeeds.", formatter_class=formatter)
     train.add_argument("--model", required=True, choices=MODEL_PROFILES)
     train.add_argument("--epochs", required=True, type=int)
+    train.add_argument("--learning-rate", type=float, default=1e-5)
+    train.add_argument("--batch-size", type=int, default=16)
+    train.add_argument("--lora-rank", type=int, default=16)
+    train.add_argument("--lora-alpha", type=int, default=16)
     train.add_argument("--run"); train.add_argument("--seed", type=int); train.add_argument("--resume", action="store_true"); train.add_argument("--force", action="store_true"); train.add_argument("--dry-run", action="store_true")
     train.set_defaults(func=cmd_train)
     infer = commands.add_parser("infer", help="Create held-out completions in the GPU container.", description="Generate held-out answers for a saved run or a named base-model run.", epilog="Run on: GPU container.\nExample: ./root-sft infer --run my-run\nOutput: completions/test.jsonl in the run directory.", formatter_class=formatter)
     infer.add_argument("--run"); infer.add_argument("--model"); infer.add_argument("--model-path"); infer.add_argument("--seed", type=int); infer.add_argument("--dry-run", action="store_true")
     infer.set_defaults(func=cmd_infer)
+    finalize = commands.add_parser("finalize", help="Export a completed checkpoint without retraining.", description="Recover a saved checkpoint when training completed but export did not run.", epilog="Run on: GPU container.\nExample: ./root-sft finalize --run my-run", formatter_class=formatter)
+    finalize.add_argument("--run", required=True); finalize.add_argument("--dry-run", action="store_true"); finalize.set_defaults(func=cmd_finalize)
     score = commands.add_parser("score", help="Score a run in an ATLAS ROOT shell.", description="Run the benchmark scorer for saved completions in an isolated workspace.", epilog="Run on: ATLAS ROOT shell.\nExample: ./root-sft score --run my-run\nOutput: benchmark report and summary files in the run directory.", formatter_class=formatter)
-    score.add_argument("--run", required=True); score.add_argument("--timeout", type=int, default=300); score.add_argument("--use-cvmfs-root", action="store_true"); score.add_argument("--dry-run", action="store_true")
+    score.add_argument("--run", required=True); score.add_argument("--timeout", type=int, default=300); score.add_argument("--use-cvmfs-root", action="store_true"); score.add_argument("--report-python"); score.add_argument("--dry-run", action="store_true")
+    score.add_argument("--allow-unsandboxed-score", action="store_true", help="Allow scoring without bwrap when the current container is already isolated.")
     score.set_defaults(func=cmd_score)
+    report = commands.add_parser("report", help="Build a report from completed ROOT evaluation.", description="Build JSON and CSV reports without rerunning ROOT evaluation.", epilog="Run on: host.\nExample: ./root-sft report --run my-run", formatter_class=formatter)
+    report.add_argument("--run", required=True); report.add_argument("--dry-run", action="store_true"); report.set_defaults(func=cmd_report)
     plot = commands.add_parser("plot", help="Plot a score report with host-side Matplotlib.", description="Render score-report images without ROOT or a container.", epilog="Run on: host.\nExample: ./root-sft plot --run my-run\nOutput: PNG and PDF images in the run's plots directory.", formatter_class=formatter)
     plot.add_argument("--run", required=True); plot.add_argument("--dry-run", action="store_true"); plot.set_defaults(func=cmd_plot)
     runs = commands.add_parser("runs", help="List saved runs.", description="List named runs and their current step.", epilog="Run on: host.\nExample: ./root-sft runs", formatter_class=formatter); runs.set_defaults(func=cmd_runs)

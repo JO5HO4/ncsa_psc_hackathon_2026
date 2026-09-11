@@ -54,6 +54,25 @@ def test_train_dry_run_records_train_and_validation_only(workflow):
     assert (root_sft.saved_path(record["paths"]["logs"]) / "train.log").is_file()
 
 
+def test_train_recovers_a_completed_checkpoint_after_export_handoff_fails(workflow, monkeypatch):
+    def fake_execute(command, **kwargs):
+        return 1 if command[-1].endswith("run_verl_sft.sh") else 0
+
+    monkeypatch.setattr(root_sft, "execute", fake_execute)
+    record = root_sft.create_run("recovered", model="qwen3.5-0.8b", seed=None, command=["train"], kind="trained")
+    root_sft.fail_run(record, "training", 1, root_sft.run_path("recovered") / "logs" / "train.log", "fixture failure")
+    checkpoint = root_sft.run_path("recovered") / "checkpoint"
+    (checkpoint / "latest_checkpointed_iteration.txt").write_text("12\n")
+    (checkpoint / "global_step_12").mkdir()
+
+    args = Namespace(model="qwen3.5-0.8b", epochs=1, run="recovered", seed=None, resume=True, force=False, dry_run=False)
+
+    assert root_sft.cmd_train(args) == 0
+    record = root_sft.load_run("recovered", require_eligible=True)
+    assert record["phase"] == "validated"
+    assert record["validation"]["checkpoint_step"] == 12
+
+
 def test_named_run_cannot_be_replaced_without_resume(workflow):
     root_sft.create_run("kept", model="qwen3.5-0.8b", seed=None, command=["train"], kind="trained")
 
