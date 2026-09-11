@@ -60,23 +60,28 @@ For a LoRA-trained checkpoint, pass its `global_step_<N>` directory (or its
 model and applies `lora_adapter/`. To pass `lora_adapter/` directly, also add
 `--base-model Qwen/Qwen3.5-0.8B`.
 
-## Score the commands
-
-From a ROOT-enabled shell, evaluate the completion file. This executes each
-command and compares its `RESULT=` output with the committed expected result:
+For an SFT export, set `MODEL` to the `huggingface/` directory and use the
+single inference entry point:
 
 ```bash
-cd data/datasets/atlas-open-data-sft-dataset
-root -l -b -q 'benchmark/evaluate_docs_completions.C("/workspace/artifacts/inference/atlas-test-qwen35-0.8b.jsonl", "benchmark/expected-results/test.jsonl", "/workspace/artifacts/inference/atlas-test-qwen35-0.8b-executed.jsonl")'
-
-python tools/benchmark/build_report.py \
-  --dataset data/sft/test.parquet \
-  --expected benchmark/expected-results/test.jsonl \
-  --completion qwen35_0_8b=/workspace/artifacts/inference/atlas-test-qwen35-0.8b-executed.jsonl \
-  --output-json /workspace/artifacts/benchmarks/atlas-test-report.json \
-  --output-csv /workspace/artifacts/benchmarks/atlas-test-report.csv \
-  --summary-csv /workspace/artifacts/benchmarks/atlas-test-summary.csv
+MODEL=/workspace/artifacts/my-atlas-run/sft-checkpoint/global_step_5600/huggingface \
+  bash /workspace/inference/run_atlas_sft_inference.sh
 ```
 
-`tools/benchmark/plot_report.py` can render plots from the summary CSV. SFT
-training setup will be documented separately.
+## Score the commands
+
+From a ROOT-enabled shell, evaluate completions and build the report in one
+command. This executes each command and compares its `RESULT=` output with the
+committed expected result:
+
+```bash
+bash inference/score_atlas_benchmark.sh \
+  artifacts/atlas-sft-completions.jsonl \
+  qwen35-0.8b-sft
+```
+
+The wrapper writes the executed completions, JSON report, CSV report, and
+summary CSV under `artifacts/benchmarks/qwen35-0.8b-sft/`. Set `ROOT_RUNNER`
+to an alternate ROOT launcher or `PYTHON_BIN` to a Python containing PyArrow
+when your environment differs. `tools/benchmark/plot_report.py` can render
+plots from the summary CSV.

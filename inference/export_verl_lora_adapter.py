@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export a single-GPU VERL FSDP LoRA checkpoint as a PEFT adapter."""
+"""Export a VERL FSDP LoRA checkpoint as a PEFT adapter."""
 
 from __future__ import annotations
 
@@ -23,25 +23,48 @@ def main() -> None:
     if not fsdp_config_path.is_file():
         raise ValueError(f"Not a VERL FSDP checkpoint: {checkpoint}")
     fsdp_config = json.loads(fsdp_config_path.read_text(encoding="utf-8"))
-    if fsdp_config.get("world_size") != 1:
-        raise ValueError(
-            "This LoRA exporter supports single-GPU checkpoints only. "
-            "Use VERL's distributed model merger for a multi-GPU checkpoint."
-        )
+    world_size = fsdp_config.get("world_size")
+    if not isinstance(world_size, int) or world_size < 1:
+        raise ValueError(f"Invalid FSDP world size in {fsdp_config_path}")
 
     import torch
+    from torch.distributed._tensor import DTensor
     from peft import LoraConfig, TaskType
     from safetensors.torch import save_file
 
-    state_path = checkpoint / "model_world_size_1_rank_0.pt"
-    state = torch.load(state_path, map_location="cpu", weights_only=False)
-    lora_state = {
-        name.replace(".default.weight", ".weight"): tensor.contiguous()
-        for name, tensor in state.items()
-        if "lora_" in name
-    }
+    lora_shards: dict[str, list[torch.Tensor]] = {}
+    placements: dict[str, object] = {}
+    for rank_index in range(world_size):
+        state_path = checkpoint / f"model_world_size_{world_size}_rank_{rank_index}.pt"
+        state = torch.load(state_path, map_location="cpu", weights_only=False)
+        for name, tensor in state.items():
+            if "lora_" not in name:
+                continue
+            normalized = name.replace(".default.weight", ".weight")
+            if isinstance(tensor, DTensor):
+                local_tensor = tensor._local_tensor.bfloat16().clone()
+                current_placements = tuple(tensor.placements)
+                if normalized in placements and placements[normalized] != current_placements:
+                    raise ValueError(f"Inconsistent FSDP placements for LoRA tensor {normalized}")
+                placements[normalized] = current_placements
+            else:
+                local_tensor = tensor.bfloat16().clone()
+            lora_shards.setdefault(normalized, []).append(local_tensor)
+        del state
+
+    lora_state: dict[str, torch.Tensor] = {}
+    for name, shards in lora_shards.items():
+        placement = placements.get(name)
+        if placement is None:
+            lora_state[name] = shards[0]
+        elif len(placement) == 1 and placement[0].is_replicate():
+            lora_state[name] = shards[0]
+        elif len(placement) == 1 and placement[0].is_shard():
+            lora_state[name] = torch.cat(shards, dim=placement[0].dim).contiguous()
+        else:
+            raise ValueError(f"Unsupported FSDP placement for LoRA tensor {name}: {placement}")
     if not lora_state:
-        raise ValueError(f"No LoRA tensors found in {state_path}")
+        raise ValueError(f"No LoRA tensors found in {checkpoint}")
 
     metadata_path = checkpoint / "lora_train_meta.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.is_file() else {}

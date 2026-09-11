@@ -135,6 +135,16 @@ checkpointing can otherwise lose the newly trained weights. Override
 `SAVE_FREQ` or `MAX_CKPT_TO_KEEP` only when you have an explicit retention
 policy.
 
+When training succeeds, the launcher prints the exact checkpoint and inference
+model directory. It also verifies that the export has either full Hugging Face
+weights or a non-empty LoRA adapter before reporting success. For the ATLAS
+held-out benchmark, pass the printed model directory to:
+
+```bash
+MODEL=/workspace/artifacts/my-run/sft-checkpoint/global_step_<N>/huggingface \
+  bash /workspace/inference/run_atlas_sft_inference.sh
+```
+
 For `Qwen/Qwen3.5-9B`, request one four-GPU Perlmutter node and use the 9B
 profile. Its default `NPROC_PER_NODE` is four; retain that value unless the
 allocation intentionally differs:

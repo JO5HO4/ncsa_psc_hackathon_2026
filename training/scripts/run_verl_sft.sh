@@ -92,9 +92,11 @@ if [[ "$EXPORT_FOR_INFERENCE" == "true" ]]; then
     exit 1
   fi
   checkpoint_dir="$SAVE_DIR/global_step_$last_step"
-  # VERL's generic merger currently produces an incomplete export for the
-  # single-GPU PEFT/FSDP checkpoint layout. Export the adapter directly; the
-  # inference runtime loads its declared base model and applies this adapter.
+  export_dir="$checkpoint_dir/huggingface"
+  # Export LoRA tensors directly for both single- and multi-GPU FSDP states.
+  # This avoids a generic VERL merger limitation that can leave config-only
+  # exports. The inference runtime loads the declared base model and applies
+  # the PEFT adapter.
   if [[ -f "$checkpoint_dir/lora_train_meta.json" ]]; then
     uv run --frozen --extra fsdp --extra sglang python "$REPO_ROOT/inference/export_verl_lora_adapter.py" \
       --checkpoint "$checkpoint_dir" \
@@ -103,6 +105,16 @@ if [[ "$EXPORT_FOR_INFERENCE" == "true" ]]; then
     uv run --frozen --extra fsdp --extra sglang python -m verl.model_merger merge \
       --backend fsdp \
       --local_dir "$checkpoint_dir" \
-      --target_dir "$checkpoint_dir/huggingface"
+      --target_dir "$export_dir"
   fi
+  uv run --frozen --extra fsdp --extra sglang python "$REPO_ROOT/inference/validate_model_export.py" "$export_dir"
+  cat <<EOF
+
+SFT checkpoint ready
+  Checkpoint: $checkpoint_dir
+  Inference model: $export_dir
+
+Run held-out inference:
+  MODEL="$export_dir" bash /workspace/inference/run_atlas_sft_inference.sh
+EOF
 fi

@@ -6,7 +6,9 @@
 # new image; container changes are lost after exiting because training/scripts/container.sh uses
 # podman-hpc run --rm.
 
-set -euo pipefail
+# This file is sourced into an interactive container shell. Do not enable
+# errexit or nounset here: those options leak into the caller and turn a typo
+# in a later command into an unexpected container exit.
 
 # Podman-HPC may inherit a host virtual environment. The pinned uv project
 # environment below must take precedence for the Qwen3.5 runtime.
@@ -29,7 +31,10 @@ mkdir -p "$UV_CACHE_DIR"
 # environment off the mounted checkout, then select the FSDP + SGLang runtime
 # needed by SFT and RL respectively.
 export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-/tmp/verl-venv}"
-uv sync --frozen --extra fsdp --extra sglang
+if ! uv sync --frozen --extra fsdp --extra sglang; then
+  echo "Failed to prepare the pinned VERL environment." >&2
+  return 1 2>/dev/null || exit 1
+fi
 
 # The container launcher bind-mounts a disk-backed cache at /hf_cache. It keeps
 # large checkpoints outside the writable layer and RAM-backed /tmp.
@@ -46,7 +51,7 @@ ray stop --force >/dev/null 2>&1 || true
 
 cd /workspace
 
-uv run --project /workspace/verl --no-sync python - <<'PY'
+if ! uv run --project /workspace/verl --no-sync python - <<'PY'
 import importlib.util
 
 import importlib.metadata
@@ -69,3 +74,7 @@ print("transformers:", transformers.__version__)
 print("sglang:", importlib.metadata.version("sglang"))
 print("qwen3_5:", "available")
 PY
+then
+  echo "Container setup checks failed." >&2
+  return 1 2>/dev/null || exit 1
+fi
