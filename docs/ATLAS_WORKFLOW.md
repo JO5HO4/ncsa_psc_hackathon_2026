@@ -85,3 +85,14 @@ summary CSV under `artifacts/benchmarks/qwen35-0.8b-sft/`. Set `ROOT_RUNNER`
 to an alternate ROOT launcher or `PYTHON_BIN` to a Python containing PyArrow
 when your environment differs. `tools/benchmark/plot_report.py` can render
 plots from the summary CSV.
+
+If you have already run `lsetup "root 6.30.02-x86_64-centos7-gcc11-opt"`,
+reuse that ROOT environment instead of requesting the CVMFS StatAnalysis
+release:
+
+```bash
+ROOT_USE_CURRENT=1 bash inference/score_atlas_benchmark.sh \
+  artifacts/atlas-open-data-sft/completions/qwen35-0.8b-sft-10epoch.jsonl \
+  qwen35-0.8b-sft-10epoch \
+  artifacts/atlas-open-data-sft/benchmarks/qwen35-0.8b-sft-10epoch
+```

@@ -6,6 +6,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATASET_ROOT="${ATLAS_DATASET_ROOT:-$REPO_ROOT/data/datasets/atlas-open-data-sft-dataset}"
 ROOT_RUNNER="${ROOT_RUNNER:-$REPO_ROOT/training/scripts/root_runtime.sh}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
+ROOT_RUNNER_ARGS=()
+if [[ "${ROOT_USE_CURRENT:-0}" == "1" ]]; then
+  ROOT_RUNNER_ARGS+=(--current-root)
+fi
 
 if [[ $# -lt 1 || $# -gt 3 ]]; then
   echo "Usage: $0 COMPLETIONS.jsonl [LABEL] [OUTPUT_DIR]" >&2
@@ -34,7 +38,7 @@ summary_csv="$output_dir/$label-summary.csv"
 macro="$DATASET_ROOT/benchmark/evaluate_docs_completions.C"
 expected="$DATASET_ROOT/benchmark/expected-results/test.jsonl"
 
-"$ROOT_RUNNER" root -l -b -q "${macro}(\"${completions}\",\"${expected}\",\"${executed}\")"
+"$ROOT_RUNNER" "${ROOT_RUNNER_ARGS[@]}" root -l -b -q "${macro}(\"${completions}\",\"${expected}\",\"${executed}\")"
 "$PYTHON_BIN" "$DATASET_ROOT/tools/benchmark/build_report.py" \
   --dataset "$DATASET_ROOT/data/sft/test.parquet" \
   --expected "$expected" \
