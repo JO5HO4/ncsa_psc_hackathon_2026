@@ -128,6 +128,13 @@ This trains `Qwen/Qwen3.5-0.8B` on the linked `hep-config-sft` dataset and
 writes its checkpoint to
 `artifacts/checkpoints/sft-smoke/`.
 
+The SFT launcher saves a checkpoint after every completed epoch and retains
+the newest one by default. This is deliberate: resumed VERL jobs can complete
+their epoch loop before their internal global-step target, so final-step-only
+checkpointing can otherwise lose the newly trained weights. Override
+`SAVE_FREQ` or `MAX_CKPT_TO_KEEP` only when you have an explicit retention
+policy.
+
 For `Qwen/Qwen3.5-9B`, request one four-GPU Perlmutter node and use the 9B
 profile. Its default `NPROC_PER_NODE` is four; retain that value unless the
 allocation intentionally differs:

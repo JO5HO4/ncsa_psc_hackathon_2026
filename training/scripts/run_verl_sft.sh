@@ -27,11 +27,16 @@ EXPERIMENT_NAME="${EXPERIMENT_NAME:-$QWEN35_PROFILE_NAME-sft}"
 LORA_RANK="${LORA_RANK:-16}"
 LORA_ALPHA="${LORA_ALPHA:-16}"
 LORA_TARGETS="${LORA_TARGETS:-[\"q_proj\",\"k_proj\",\"v_proj\",\"o_proj\",\"gate_proj\",\"up_proj\",\"down_proj\"]}"
-# Current verl uses -1 to save or test only at the final step.
-SAVE_FREQ="${SAVE_FREQ:--1}"
+# Save each completed epoch by default.  On a resumed StatefulDataLoader run,
+# VERL can finish the configured epoch loop before its global-step counter
+# reaches the nominal final step.  A final-step-only save would then discard
+# all newly trained weights when the process exits.
+SAVE_FREQ="${SAVE_FREQ:-after_each_epoch}"
 TEST_FREQ="${TEST_FREQ:--1}"
 RESUME_MODE="${RESUME_MODE:-auto}"
-MAX_CKPT_TO_KEEP="${MAX_CKPT_TO_KEEP:-null}"
+# Epoch checkpoints are complete FSDP states. Keep the newest one by default
+# so this safety measure does not consume one full checkpoint per epoch.
+MAX_CKPT_TO_KEEP="${MAX_CKPT_TO_KEEP:-1}"
 # Convert the final raw FSDP checkpoint into a normal Hugging Face model after
 # training. This also handles the default LoRA setup correctly.
 EXPORT_FOR_INFERENCE="${EXPORT_FOR_INFERENCE:-true}"
