@@ -33,6 +33,10 @@ runtime loads its base model and applies the adapter automatically. A direct
 adapter directory also works; use `--base-model Qwen/Qwen3.5-0.8B` if the
 adapter metadata does not identify its base model.
 
+For single-GPU LoRA SFT runs, the launcher writes the adapter directly from the
+resumable VERL checkpoint. This is intentional: it avoids a VERL generic-model
+merger limitation that can otherwise leave a config-only export.
+
 For a checkpoint made before this launcher update, create the export once:
 
 ```bash
