@@ -15,7 +15,12 @@ from model_runtime import generate_chat, generate_text, load_model
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", required=True, help="Hugging Face model ID, local HF model, or verl checkpoint")
+    parser.add_argument("--model", required=True, help="Hugging Face model ID, local HF model, verl checkpoint, or LoRA adapter")
+    parser.add_argument(
+        "--base-model",
+        default=None,
+        help="base model for an adapter-only --model (uses adapter/export metadata when omitted)",
+    )
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument("--prompts", type=Path, help="JSON or JSONL input prompts")
     input_group.add_argument("--dataset", help="Hugging Face dataset ID")
@@ -149,7 +154,7 @@ def main() -> None:
         records = itertools.islice(records, args.limit)
 
     model, tokenizer, resolved_model, selected_device = load_model(
-        args.model, args.device, trust_remote_code=args.trust_remote_code
+        args.model, args.device, trust_remote_code=args.trust_remote_code, base_model=args.base_model
     )
     print(f"Loaded {resolved_model} on {selected_device}", flush=True)
     args.output.parent.mkdir(parents=True, exist_ok=True)

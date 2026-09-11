@@ -55,6 +55,11 @@ uv run --project /workspace/verl --no-sync python /workspace/inference/run_promp
 
 Use `Qwen/Qwen3.5-9B` for the larger model. Do not train on `test.parquet`.
 
+For a LoRA-trained checkpoint, pass its `global_step_<N>` directory (or its
+`huggingface/` child) to `--model`; inference automatically loads the Qwen base
+model and applies `lora_adapter/`. To pass `lora_adapter/` directly, also add
+`--base-model Qwen/Qwen3.5-0.8B`.
+
 ## Score the commands
 
 From a ROOT-enabled shell, evaluate the completion file. This executes each

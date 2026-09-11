@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 from typing import Any
 
 
 def resolve_model(model: str | Path) -> str:
-    """Resolve a local verl/HF export, or retain a Hugging Face model ID."""
+    """Resolve a local verl/HF export or LoRA adapter, or retain a Hub ID."""
     source = str(model)
     candidate = Path(source).expanduser()
     if not candidate.is_dir():
@@ -21,12 +22,55 @@ def resolve_model(model: str | Path) -> str:
     if export.is_dir():
         candidate = export
 
-    if not (candidate / "config.json").is_file():
+    is_adapter = (candidate / "adapter_config.json").is_file()
+    has_nested_adapter = (candidate / "lora_adapter" / "adapter_config.json").is_file()
+    if not (candidate / "config.json").is_file() and not is_adapter and not has_nested_adapter:
         raise ValueError(
-            f"{candidate} is not a Transformers model directory. Pass a directory "
-            "containing config.json, or a verl checkpoint containing huggingface/."
+            f"{candidate} is not a Transformers model or LoRA adapter directory. Pass a directory "
+            "containing config.json, adapter_config.json, or a verl checkpoint containing huggingface/."
         )
     return str(candidate)
+
+
+def _adapter_directory(model_dir: Path) -> Path | None:
+    """Return a direct or nested PEFT adapter directory, if present."""
+    if (model_dir / "adapter_config.json").is_file():
+        return model_dir
+    nested = model_dir / "lora_adapter"
+    if (nested / "adapter_config.json").is_file():
+        return nested
+    return None
+
+
+def _has_model_weights(model_dir: Path) -> bool:
+    return any((model_dir / name).is_file() for name in (
+        "model.safetensors",
+        "pytorch_model.bin",
+        "model.safetensors.index.json",
+        "pytorch_model.bin.index.json",
+    ))
+
+
+def _read_model_id(path: Path, keys: tuple[str, ...]) -> str | None:
+    try:
+        contents = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(contents, dict):
+        return None
+    for key in keys:
+        value = contents.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
+def _adapter_base_model(adapter_dir: Path, export_dir: Path) -> str | None:
+    """Find the base model recorded by PEFT or the adjacent VERL export."""
+    base = _read_model_id(adapter_dir / "adapter_config.json", ("base_model_name_or_path",))
+    if base:
+        return base
+    return _read_model_id(export_dir / "config.json", ("_name_or_path", "base_model_name_or_path"))
 
 
 def select_device(requested: str) -> str:
@@ -43,19 +87,33 @@ def load_model(
     model: str | Path,
     device: str = "auto",
     trust_remote_code: bool = False,
+    base_model: str | Path | None = None,
 ) -> tuple[Any, Any, str, str]:
-    """Load a local verl/HF export or a model directly from the Hugging Face Hub."""
+    """Load a full HF model or apply a local LoRA adapter to its base model."""
     import torch
     from transformers import AutoConfig, AutoModelForCausalLM, AutoModelForMultimodalLM, AutoProcessor, AutoTokenizer
 
     resolved = resolve_model(model)
     selected_device = select_device(device)
-    config = AutoConfig.from_pretrained(resolved, trust_remote_code=trust_remote_code)
+    model_dir = Path(resolved)
+    adapter_path = _adapter_directory(model_dir) if model_dir.is_dir() else None
+    adapter_only = adapter_path is not None and not _has_model_weights(model_dir)
+    load_source = resolved
+    if adapter_only:
+        base = str(base_model) if base_model is not None else _adapter_base_model(adapter_path, model_dir)
+        if not base:
+            raise ValueError(
+                f"{adapter_path} is a LoRA adapter without an identifiable base model. "
+                "Pass --base-model, for example --base-model Qwen/Qwen3.5-0.8B."
+            )
+        load_source = resolve_model(base)
+
+    config = AutoConfig.from_pretrained(load_source, trust_remote_code=trust_remote_code)
     is_qwen35 = config.model_type in {"qwen3_5", "qwen3_5_moe"}
     if is_qwen35:
-        tokenizer = AutoProcessor.from_pretrained(resolved, trust_remote_code=trust_remote_code)
+        tokenizer = AutoProcessor.from_pretrained(load_source, trust_remote_code=trust_remote_code)
     else:
-        tokenizer = AutoTokenizer.from_pretrained(resolved, trust_remote_code=trust_remote_code)
+        tokenizer = AutoTokenizer.from_pretrained(load_source, trust_remote_code=trust_remote_code)
 
     underlying_tokenizer = getattr(tokenizer, "tokenizer", tokenizer)
     if underlying_tokenizer.pad_token_id is None:
@@ -77,9 +135,8 @@ def load_model(
             # streaming the checkpoint directly to the accelerator.
             gpu_limit = os.environ.get("QWEN35_GPU_MEMORY_GIB", "30")
             load_kwargs["max_memory"] = {0: f"{gpu_limit}GiB", "cpu": "40GiB"}
-    model = model_class.from_pretrained(resolved, **load_kwargs)
-    adapter_path = Path(resolved) / "lora_adapter"
-    if (adapter_path / "adapter_config.json").is_file():
+    model = model_class.from_pretrained(load_source, **load_kwargs)
+    if adapter_path is not None:
         from peft import PeftModel
 
         model = PeftModel.from_pretrained(model, adapter_path)
@@ -87,7 +144,8 @@ def load_model(
     if selected_device != "cuda":
         model.to(selected_device)
     model.eval()
-    return model, tokenizer, resolved, selected_device
+    description = f"{load_source} + {adapter_path}" if adapter_only else resolved
+    return model, tokenizer, description, selected_device
 
 
 def _uses_multimodal_processor(runtime: Any) -> bool:

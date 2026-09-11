@@ -20,13 +20,18 @@ important for the default LoRA training setup.
 artifacts/checkpoints/my-run/global_step_<N>/
 └── huggingface/
     ├── config.json
-    ├── model.safetensors
+├── model.safetensors              # present for full-model training
+├── lora_adapter/                  # present for LoRA training
+│   ├── adapter_config.json
+│   └── adapter_model.safetensors
     └── tokenizer files
 ```
 
-Pass either `global_step_<N>` or its `huggingface/` child to `--checkpoint`.
-The scripts resolve the latter automatically. If the export includes a LoRA
-adapter, the runtime loads and merges it before generation.
+Pass either `global_step_<N>` or its `huggingface/` child to `--model`.
+The scripts resolve the latter automatically. For an adapter-only export, the
+runtime loads its base model and applies the adapter automatically. A direct
+adapter directory also works; use `--base-model Qwen/Qwen3.5-0.8B` if the
+adapter metadata does not identify its base model.
 
 For a checkpoint made before this launcher update, create the export once:
 
