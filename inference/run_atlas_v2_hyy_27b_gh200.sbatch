@@ -78,7 +78,7 @@ apptainer exec --nv --cleanenv \
       --system-prompt "Reply with only the requested final answer. Do not explain your reasoning." \
       --device cuda --temperature 0 --max-new-tokens 32 \
       --output '"$output_dir"'/query-completions.jsonl
-    python /workspace/inference/evaluate_atlas_benchmark.py \
+    python3 /workspace/inference/evaluate_atlas_benchmark.py \
       --completions '"$output_dir"'/query-completions.jsonl \
       --dataset-root /workspace/data/datasets/atlas-open-data-sft-dataset \
       --output '"$output_dir"'/query-score.json
