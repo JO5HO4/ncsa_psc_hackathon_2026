@@ -226,14 +226,21 @@ srun --account=bccu-dtai-gh --partition=ghx4-interactive \
 
 cd /projects/bccu/jho4/ncsa_psc_hackathon_2026
 nvidia-smi
+source training/scripts/container.sh
+source training/scripts/setup.sh
+exit
+
+# Back on the GH200 host, run a one-epoch smoke job in this allocation.
 MIXED_SFT_RUN_NAME=atlas-v2-hyy-27b-interactive-smoke \
 MIXED_SFT_TOTAL_EPOCHS=1 \
 MIXED_SFT_EXPORT_FOR_INFERENCE=false \
   bash training/scripts/train_atlas_v2_hyy_sft_qwen35_27b_gh200.sbatch
 ```
 
-Run the launcher with `bash` after `srun`; its `#SBATCH` lines are ignored in
-an existing allocation. The first image and model download can use much of the
+`container.sh` now selects the ARM64 Apptainer image on GH200 and opens a
+container shell; source `setup.sh` in that shell to verify the environment.
+After `exit`, run the launcher with `bash`; its `#SBATCH` lines are ignored in
+the existing allocation. The first image and model download can use much of the
 two-hour limit, so warm the cache before relying on an interactive smoke run.
 
 ### Mixed ATLAS V2 and Hyy LoRA SFT

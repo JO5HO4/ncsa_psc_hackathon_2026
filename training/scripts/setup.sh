@@ -31,7 +31,10 @@ mkdir -p "$UV_CACHE_DIR"
 # The pinned uv image has an offline-warmed dependency cache. Keep its virtual
 # environment off the mounted checkout, then select the FSDP + SGLang runtime
 # needed by SFT and RL respectively.
-export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-/tmp/verl-venv}"
+# Never reuse verl/.venv from the mounted checkout. On a shared checkout it
+# may have been created on an x86 host, which an ARM64 GH200 cannot execute.
+# The container launcher binds a writable, disk-backed directory at /tmp.
+export UV_PROJECT_ENVIRONMENT=/tmp/verl-venv
 uv_extras=(--extra fsdp)
 if [[ "$VERL_ENABLE_SGLANG" == "true" ]]; then
   uv_extras+=(--extra sglang)
