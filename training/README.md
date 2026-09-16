@@ -5,11 +5,18 @@ This directory contains the runnable training side of the hackathon. It uses
 
 ## What is ready now
 
-For ROOT/HEP knowledge post-training using `root_questions_617.jsonl`, see
-[root_sft/README.md](root_sft/README.md). It prepares topic-capped chat Parquet,
-conservative grouped splits, a Perlmutter GPU smoke/full job, and paired
-before/after evaluation using the existing verl SFT launcher. It does not
-replace the training framework. The GPU smoke job still needs to be run.
+For the executable ROOT-operation pilot (structured-operation SFT data and a
+deterministic execution evaluator), see
+[root_sft/FILE_TASKS.md](root_sft/FILE_TASKS.md).
+
+To turn a plain list of authored questions/answers into the `messages`/
+`tools`/`enable_thinking` shape a specific target model needs for SFT (the
+fix that took the ROOT-command dataset's validation success from 39.6% to
+98.2% was exactly this: getting Qwen3.5's `tools`/`enable_thinking` handling
+and the output contract right), see
+[translator/README.md](translator/README.md). It replaces the one-off
+`prepare_qwen_root_command_sft.py`/`build_qwen_root_command_parquet.py`
+scripts with a reusable model-profile × task-profile system.
 
 `scripts/run_verl_sft.sh` runs SFT on the included `hep-config-sft` reference
 dataset by default. That dataset already has the `messages` and `tools` fields
