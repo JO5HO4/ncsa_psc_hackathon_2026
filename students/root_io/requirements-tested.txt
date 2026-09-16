@@ -1,6 +1,0 @@
-# Top-level versions used for the student release checks (Python 3.10.18).
-# This is not a complete transitive dependency lock. PyROOT is optional.
-uproot==5.6.3
-awkward==2.8.7
-numpy==1.26.4
-jsonschema==4.25.0

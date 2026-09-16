@@ -56,7 +56,6 @@ The local `.venv/` is ignored; commit dependency changes with the lockfile.
 | --- | --- |
 | [data/](data/README.md) | Dataset families, fixtures, and publishing conventions |
 | [root_io/](root_io/README.md) | Bounded tools for ROOT-file inspection tasks |
-| [students/root_io/](students/root_io/README.md) | Offline 617-question student workbook and checked ROOT-file exercises |
 | [trex_fitter/](trex_fitter/README.md) | The code that checks and runs configs |
 | [training/](training/README.md) | Training with verl |
 | [inference/](inference/README.md) | Testing a trained model |

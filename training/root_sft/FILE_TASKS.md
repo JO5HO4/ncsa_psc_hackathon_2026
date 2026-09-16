@@ -60,16 +60,16 @@ Inside the GPU container, with dependencies installed, from `/workspace`:
 
 ```bash
 python inference/run_prompts.py \
-  --model artifacts/root-sft/checkpoint-comparison-001/epoch1_model \
+  --model /path/to/your/sft/checkpoint/huggingface \
   --prompts data/root_io/file-tasks-v1/validation/prompts.jsonl \
-  --output artifacts/root-filetasks-epoch1-before.jsonl \
+  --output artifacts/root-filetasks-before.jsonl \
   --format chat --device cuda --temperature 0 --max-new-tokens 512 \
   --system-prompt 'Return one JSON object calling the documented ROOT operation. No prose, code fences or predicted results.'
 
 python training/root_sft/file_tasks.py evaluate \
   --release data/root_io/file-tasks-v1 --split validation \
-  --predictions artifacts/root-filetasks-epoch1-before.jsonl \
-  --output artifacts/root-filetasks-epoch1-before-score
+  --predictions artifacts/root-filetasks-before.jsonl \
+  --output artifacts/root-filetasks-before-score
 ```
 
 Also measure the original pinned Qwen snapshot under the same decoding settings.
@@ -84,9 +84,8 @@ Do not interpret oracle/reference tests passing as model performance.
 ## Training integration, unchanged verl
 
 The generated `train/sft.parquet` and `validation/sft.parquet` already have the
-messages/tools schema understood by `training/verl_dataset.py`. They are not
-compatible with the old knowledge-bank-specific preflight manifest; do not point
-`training/root_sft/run.sh` at this release. Use the existing generic launcher.
+messages/tools schema understood by `training/verl_dataset.py`. Use the
+existing generic `training/scripts/run_verl_sft.sh` launcher.
 
 For a future two-step smoke run, after checking tokenizer lengths and assistant
 loss masks with the actual model and adapter, the relevant overrides are:
