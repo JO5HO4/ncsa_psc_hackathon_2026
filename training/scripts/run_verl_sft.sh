@@ -56,7 +56,7 @@ if [[ "$VERL_ENABLE_SGLANG" == "true" ]]; then
   uv_extras+=(--extra sglang)
 fi
 
-uv run --frozen "${uv_extras[@]}" torchrun --standalone --nnodes=1 --nproc_per_node="$NPROC_PER_NODE" --master_addr="$MASTER_ADDR" \
+uv run --no-sync "${uv_extras[@]}" torchrun --standalone --nnodes=1 --nproc_per_node="$NPROC_PER_NODE" --master_addr="$MASTER_ADDR" \
   -m verl.trainer.sft_trainer \
   data.train_files="$TRAIN_FILE" \
   data.val_files="$VAL_FILE" \
@@ -111,16 +111,16 @@ if [[ "$EXPORT_FOR_INFERENCE" == "true" ]]; then
   # exports. The inference runtime loads the declared base model and applies
   # the PEFT adapter.
   if [[ -f "$checkpoint_dir/lora_train_meta.json" ]]; then
-    uv run --frozen "${uv_extras[@]}" python "$REPO_ROOT/inference/export_verl_lora_adapter.py" \
+    uv run --no-sync "${uv_extras[@]}" python "$REPO_ROOT/inference/export_verl_lora_adapter.py" \
       --checkpoint "$checkpoint_dir" \
       --base-model "$MODEL_PATH"
   else
-    uv run --frozen "${uv_extras[@]}" python -m verl.model_merger merge \
+    uv run --no-sync "${uv_extras[@]}" python -m verl.model_merger merge \
       --backend fsdp \
       --local_dir "$checkpoint_dir" \
       --target_dir "$export_dir"
   fi
-  uv run --frozen "${uv_extras[@]}" python "$REPO_ROOT/inference/validate_model_export.py" "$export_dir"
+  uv run --no-sync "${uv_extras[@]}" python "$REPO_ROOT/inference/validate_model_export.py" "$export_dir"
   cat <<EOF
 
 SFT checkpoint ready
