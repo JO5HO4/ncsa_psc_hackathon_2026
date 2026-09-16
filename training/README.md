@@ -202,6 +202,19 @@ sbatch --export=ALL,HYY_SFT_MAX_LENGTH=16384,HYY_SFT_MAX_TOKEN_LEN_PER_GPU=16384
   training/scripts/train_hyy_sft_qwen35_27b_h100.sbatch
 ```
 
+On Delta-GH, the available GPUs are 120 GB GH200s rather than H100s. Use the
+Apptainer-based mixed-dataset launcher there; it requests two GPUs from the
+`ghx4` partition and uses the `bccu-dtai-gh` account:
+
+```bash
+sbatch training/scripts/train_atlas_v2_hyy_sft_qwen35_27b_gh200.sbatch
+```
+
+The first job downloads the pinned 12 GB ARM64 VERL image to
+`artifacts/delta-gh-cache/images/`. Set `DELTA_GH_CACHE_ROOT` to a larger
+writable filesystem when the repository volume cannot retain the model cache,
+container, and checkpoints.
+
 ### Mixed ATLAS V2 and Hyy LoRA SFT
 
 To train one Qwen3.5-27B LoRA adapter on both the V2 ATLAS Open Data command

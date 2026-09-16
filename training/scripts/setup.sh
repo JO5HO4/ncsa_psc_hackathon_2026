@@ -13,6 +13,7 @@
 # Podman-HPC may inherit a host virtual environment. The pinned uv project
 # environment below must take precedence for the Qwen3.5 runtime.
 unset VIRTUAL_ENV
+export VERL_ENABLE_SGLANG="${VERL_ENABLE_SGLANG:-true}"
 
 if [ ! -d /workspace/verl ]; then
   echo "Expected /workspace/verl. Start the container from the repo root with: bash training/scripts/container.sh" >&2
@@ -31,7 +32,11 @@ mkdir -p "$UV_CACHE_DIR"
 # environment off the mounted checkout, then select the FSDP + SGLang runtime
 # needed by SFT and RL respectively.
 export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-/tmp/verl-venv}"
-if ! uv sync --frozen --extra fsdp --extra sglang; then
+uv_extras=(--extra fsdp)
+if [[ "$VERL_ENABLE_SGLANG" == "true" ]]; then
+  uv_extras+=(--extra sglang)
+fi
+if ! uv sync --frozen "${uv_extras[@]}"; then
   echo "Failed to prepare the pinned VERL environment." >&2
   return 1 2>/dev/null || exit 1
 fi
@@ -53,8 +58,8 @@ cd /workspace
 
 if ! uv run --project /workspace/verl --no-sync python - <<'PY'
 import importlib.util
-
 import importlib.metadata
+import os
 
 import torch
 import transformers
@@ -71,7 +76,8 @@ print("main_ppo:", importlib.util.find_spec("verl.trainer.main_ppo").origin)
 print("cuda:", torch.cuda.is_available(), torch.cuda.device_count())
 print("torch:", torch.__version__)
 print("transformers:", transformers.__version__)
-print("sglang:", importlib.metadata.version("sglang"))
+if os.environ.get("VERL_ENABLE_SGLANG") == "true":
+    print("sglang:", importlib.metadata.version("sglang"))
 print("qwen3_5:", "available")
 PY
 then
