@@ -1,0 +1,20 @@
+{
+  "id": "v3-histfit-001",
+  "family": "trex_execution",
+  "environment": {
+    "container": "StatAnalysis 0.8.2",
+    "trex_fitter": "v1.10.0",
+    "root": "6.40.04",
+    "input_fixture": "data/samples/examples/Histo"
+  },
+  "editable_paths": ["analysis.config"],
+  "actions": ["h", "w", "f", "s"],
+  "reference_expected_significance": 0.497381,
+  "success_contract": {
+    "requires_native_exit_zero": true,
+    "requires_zero_bad_fits": true,
+    "required_artifacts": ["histograms", "fit", "workspace"],
+    "minimum_expected_significance_fraction": 0.95,
+    "normalization_contract": "Signal Sample has NormFactor SigXsecOverSM,1,0,100"
+  }
+}

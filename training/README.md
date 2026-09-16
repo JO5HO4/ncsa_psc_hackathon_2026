@@ -187,6 +187,41 @@ Use `QWEN35_MODEL_SIZE=9b` for the four-GPU 9B profile. Start with bounded
 response lengths and inspect the smoke-run generations before enlarging a
 Qwen3.5 RL experiment; the 0.8B model can otherwise overthink or loop.
 
+### Native TRExFitter V3 GRPO
+
+The first V3 stage is terminal-config RL: Qwen emits only the complete
+`analysis.config`; the reward writes it into a unique workspace and runs the
+pinned native `h w f s` chain. It rewards valid structure, a successful fit,
+required artifacts, zero bad fits, and expected significance near the recorded
+reference. It is not yet the later multi-turn Bash/apply-patch agent loop.
+
+Materialize its deliberately gold-answer-free records, then submit the bounded
+four-GPU 9B run:
+
+```bash
+python3 training/prepare_trex_v3_rl.py
+sbatch training/scripts/train_trex_v3_qwen35_9b_rl.sbatch
+```
+
+For a local native reward check (requires the same podman-hpc/TREx runtime),
+use a known config:
+
+```bash
+python3 training/rewards/trex_v3_histfit_reward.py data/configs/examples/FitExample.config
+```
+
+Set `TREX_RL_KEEP_WORKSPACES=1` to retain rollout workspaces for diagnosis.
+Because VERL is itself containerized but `podman-hpc` must run on the allocation
+host, interactive and batch launches use the host-side
+`trex_v3_reward_server.py` over a repository-mounted Unix socket.
+For Qwen3.5-9B on four GPUs, use `ROLLOUT_TP=4`, merged LoRA, and keep
+the actor parameters on GPU (`ACTOR_PARAM_OFFLOAD=False`). A rank-one rollout
+places an entire SGLang model beside each FSDP actor shard and can OOM during
+LoRA weight synchronization; conversely, adapter-mode base synchronization
+with parameter offload can assemble full copies in host RAM on every rank. On
+40 GB GPUs, reserve at most 30% of each GPU for SGLang during the initial
+merged-weight synchronization.
+
 ## Files
 
 - `bootstrap_verl.sh` initializes the linked verl repository for an existing

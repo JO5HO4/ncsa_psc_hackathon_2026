@@ -16,7 +16,7 @@ if [[ $# -eq 0 ]]; then
 fi
 
 # Use an already configured ROOT installation, for example after
-# `lsetup "root 6.30.02-x86_64-centos7-gcc11-opt"` in an EL7 container.
+# `lsetup "root 6.40.02-x86_64-el9-gcc15-opt"` in an AlmaLinux 9 container.
 # This deliberately bypasses CVMFS StatAnalysis, which is an EL9 build.
 if [[ $1 == "--current-root" ]]; then
   shift

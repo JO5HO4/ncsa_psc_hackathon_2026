@@ -31,6 +31,8 @@ podman-hpc run --rm -it --gpu --entrypoint= \
   -e HF_HUB_DISABLE_XET=1 \
   -e HF_TOKEN \
   -e ROOT_SFT_IN_CONTAINER=1 \
+  -e TREX_RL_REWARD_SOCKET \
+  -e TREX_RL_REWARD_SECONDS \
   -e UV_CACHE_DIR=/hf_cache/uv \
   -e TMPDIR=/tmp \
   -w /workspace \
