@@ -57,6 +57,14 @@ if ! uv sync --frozen --python 3.12 "${uv_extras[@]}" "${uv_reinstall[@]}"; then
   return 1 2>/dev/null || exit 1
 fi
 
+# flash-linear-attention rejects Triton 3.4--3.7.0 for Qwen3.5's gated-delta
+# backward kernel on Hopper/GH200 because it can produce incorrect gradients.
+# The FSDP lock currently pins 3.6.0, so use FLA's supported 3.7.1 workaround
+# only on the ARM64 GH200 environment.
+if [[ "$(uname -m)" == "aarch64" ]]; then
+  uv pip install --no-deps --python "$UV_PROJECT_ENVIRONMENT/bin/python" triton==3.7.1
+fi
+
 # The container launcher bind-mounts a disk-backed cache at /hf_cache. It keeps
 # large checkpoints outside the writable layer and RAM-backed /tmp.
 # The fallback also works for a manually started compatible container.
