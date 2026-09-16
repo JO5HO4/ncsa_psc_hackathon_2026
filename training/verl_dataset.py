@@ -27,7 +27,9 @@ class TReXConfigSFTDataset(MultiTurnSFTDataset):
                 "The messages column must contain a JSON array or Python list; "
                 f"received {type(value).__name__}."
             )
-        return value
+        # Hyy's Arrow JSON extension becomes a JSON array whose individual
+        # messages are JSON strings. ATLAS messages are already dictionaries.
+        return [json.loads(message) if isinstance(message, str) else message for message in value]
 
     @staticmethod
     def decode_tools(value):
@@ -74,6 +76,17 @@ class TReXConfigSFTDataset(MultiTurnSFTDataset):
         self.system_prompt, self.generation_prompt = extract_system_prompt_and_generation(
             self.tokenizer, **self.apply_chat_template_kwargs
         )
+
+    def _build_messages(self, example: dict):
+        """Decode the raw Parquet value used by VERL's per-item loader.
+
+        ``MultiTurnSFTDataset.__getitem__`` calls this method with the original
+        dataframe row rather than ``self.messages``. Hyy messages therefore
+        need decoding here as well as during initial dataset validation.
+        These corpora are text-only, so no image or video placeholder handling
+        is needed.
+        """
+        return self.decode_messages(example[self.messages_key])
 
     def _process_single_message(self, index, message, full_message, tools=None, enable_thinking=None):
         """Render each turn with enough preceding context for Qwen's template."""
