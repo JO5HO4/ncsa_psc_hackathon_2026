@@ -1,0 +1,72 @@
+# Copy this file to training/pipeline.conf and edit it, then run:
+#
+#   bash training/run_pipeline.sh training/pipeline.conf
+#
+# from an interactive Perlmutter GPU allocation. training/pipeline.conf is
+# gitignored (it typically ends up with local paths); this .example stays
+# tracked. See training/run_pipeline.sh and training/pipeline_runner.py for
+# what each field controls.
+
+# --- Run identity -----------------------------------------------------
+# Output goes to artifacts/pipeline-runs/$RUN_NAME/ (refuses to overwrite an
+# existing run -- pick a new name to rerun).
+RUN_NAME=my-experiment
+
+# --- What to run --------------------------------------------------------
+# Any combination is valid except all-false. If RUN_POST_TRAINING_INFERENCE=true
+# and RUN_TRAINING=false, EXISTING_MODEL below must point at an already
+# exported model (e.g. from a previous run's checkpoints/global_step_N/huggingface).
+RUN_BASELINE_INFERENCE=true
+RUN_TRAINING=true
+RUN_POST_TRAINING_INFERENCE=true
+
+# Execute every generated command for real and diff it against the recorded
+# expected result (inference/score_atlas_benchmark.sh). Only valid when
+# TASK_PROFILE has an execution contract -- today that is root_command only.
+RUN_ROOT_SCORING=true
+
+# --- Model + task ---------------------------------------------------------
+# 0.8b or 9b selects the matching official Qwen3.5 checkpoint and GPU
+# defaults; set MODEL_PATH instead to pin an exact model/revision or a local
+# snapshot.
+QWEN35_MODEL_SIZE=9b
+# MODEL_PATH=
+# BASE_REVISION=
+
+# Looked up in training/translator/task_profiles.py for the exact system
+# prompt used at inference -- this is deliberately not a config field, so
+# the prompt used to build TRAIN_FILE/VAL_FILE and the prompt used at
+# inference can never drift apart (see training/translator/README.md).
+TASK_PROFILE=root_command
+
+# --- Dataset --------------------------------------------------------------
+# Paths are relative to the repository root. TRAIN_FILE/VAL_FILE are only
+# needed when RUN_TRAINING=true; any translator-produced release works here,
+# not just the two examples below.
+TRAIN_FILE=data/derived/qwen-root-command-chat-v1/train.parquet
+VAL_FILE=data/derived/qwen-root-command-chat-v1/validation.parquet
+# {id, messages:[system,user,assistant]} JSONL to draw evaluation prompts
+# from -- needed whenever RUN_BASELINE_INFERENCE or
+# RUN_POST_TRAINING_INFERENCE is true. Use the held-out test split to
+# reproduce a reportable number.
+EVAL_FILE=data/datasets/atlas-open-data-sft-dataset/data/sft/test.jsonl
+
+# Only used when RUN_TRAINING=false and RUN_POST_TRAINING_INFERENCE=true.
+# EXISTING_MODEL=
+
+# --- Hyperparameters --------------------------------------------------
+# Defaults below reproduce the winning configuration from
+# results/ROOT_QWEN_GRID_58288690.md (9B, lr 1e-5, 15 epochs -> 98.2%
+# validation with the qwen-root-command-chat-v1 dataset).
+LR=1e-5
+TOTAL_EPOCHS=15
+TRAIN_BATCH_SIZE=16
+MICRO_BATCH_SIZE_PER_GPU=1
+MAX_LENGTH=2048
+MAX_TOKEN_LEN_PER_GPU=8192
+LORA_RANK=16
+LORA_ALPHA=16
+
+# --- Perlmutter -----------------------------------------------------------
+# 4 for the 9b profile, 1 for 0.8b.
+NPROC_PER_NODE=4
