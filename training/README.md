@@ -202,6 +202,21 @@ sbatch --export=ALL,HYY_SFT_MAX_LENGTH=16384,HYY_SFT_MAX_TOKEN_LEN_PER_GPU=16384
   training/scripts/train_hyy_sft_qwen35_27b_h100.sbatch
 ```
 
+### Mixed ATLAS V2 and Hyy LoRA SFT
+
+To train one Qwen3.5-27B LoRA adapter on both the V2 ATLAS Open Data command
+records and the Hyy TRExFitter tool trajectories, submit:
+
+```bash
+sbatch training/scripts/train_atlas_v2_hyy_sft_qwen35_27b_h100.sbatch
+```
+
+The job fetches the pinned Hyy release, renders the current V2 split, and
+interleaves both source-qualified corpora into one train and validation Parquet
+pair. It keeps all examples without resampling and writes the source counts to
+`artifacts/datasets/atlas-v2-hyy-sft/manifest.json`. The Hyy trajectories set
+the 32K context requirement for the combined run.
+
 `TRAIN_FILE` and `VAL_FILE` must be absolute paths once inside the container,
 or paths relative to the local `verl/` checkout.
 
