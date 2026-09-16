@@ -215,6 +215,27 @@ The first job downloads the pinned 12 GB ARM64 VERL image to
 writable filesystem when the repository volume cannot retain the model cache,
 container, and checkpoints.
 
+Delta-GH also provides the two-hour `ghx4-interactive` partition. Use it for
+an environment check or a one-epoch smoke run, then use the normal `ghx4`
+batch partition for the full ten-epoch job:
+
+```bash
+srun --account=bccu-dtai-gh --partition=ghx4-interactive \
+  --nodes=1 --ntasks=1 --gpus=2 --cpus-per-task=32 --time=02:00:00 \
+  --pty bash -l
+
+cd /projects/bccu/jho4/ncsa_psc_hackathon_2026
+nvidia-smi
+MIXED_SFT_RUN_NAME=atlas-v2-hyy-27b-interactive-smoke \
+MIXED_SFT_TOTAL_EPOCHS=1 \
+MIXED_SFT_EXPORT_FOR_INFERENCE=false \
+  bash training/scripts/train_atlas_v2_hyy_sft_qwen35_27b_gh200.sbatch
+```
+
+Run the launcher with `bash` after `srun`; its `#SBATCH` lines are ignored in
+an existing allocation. The first image and model download can use much of the
+two-hour limit, so warm the cache before relying on an interactive smoke run.
+
 ### Mixed ATLAS V2 and Hyy LoRA SFT
 
 To train one Qwen3.5-27B LoRA adapter on both the V2 ATLAS Open Data command

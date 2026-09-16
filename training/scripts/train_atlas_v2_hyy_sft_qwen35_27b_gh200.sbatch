@@ -23,7 +23,8 @@ cache_root="${DELTA_GH_CACHE_ROOT:-$repo/artifacts/delta-gh-cache}"
 hyy_dir="$repo/artifacts/datasets/hyy-sft"
 atlas_dir=/workspace/artifacts/datasets/atlas-open-data-sft-v2
 mixed_dir=/workspace/artifacts/datasets/atlas-v2-hyy-sft
-save_dir=/workspace/artifacts/checkpoints/atlas-v2-hyy-qwen35-27b-r32-e10
+run_name="${MIXED_SFT_RUN_NAME:-atlas-v2-hyy-qwen35-27b-r32-e10}"
+save_dir="${MIXED_SFT_SAVE_DIR:-/workspace/artifacts/checkpoints/$run_name}"
 image_sif="$cache_root/images/verl-uv-cu130-arm64.sif"
 image_uri="docker://verlai/verl@sha256:094943c1909590564feda8122bd090ba0a93aa42345245111a05225c1a7972f1"
 hf_cache="$cache_root/hf-cache"
@@ -32,6 +33,8 @@ container_tmp="$cache_root/tmp"
 train_batch_size="${MIXED_SFT_TRAIN_BATCH_SIZE:-2}"
 max_length="${MIXED_SFT_MAX_LENGTH:-32768}"
 max_token_len="${MIXED_SFT_MAX_TOKEN_LEN_PER_GPU:-32768}"
+total_epochs="${MIXED_SFT_TOTAL_EPOCHS:-10}"
+export_for_inference="${MIXED_SFT_EXPORT_FOR_INFERENCE:-true}"
 
 mkdir -p "$repo/artifacts/slurm" "$hyy_dir" "$hf_cache" "$uv_cache" "$container_tmp" "$(dirname "$image_sif")"
 if [[ ! -f "$image_sif" ]]; then
@@ -63,13 +66,14 @@ apptainer exec --nv --cleanenv \
     MAX_LENGTH='"$max_length"' \
     MAX_TOKEN_LEN_PER_GPU='"$max_token_len"' \
     LR=1e-5 \
-    TOTAL_EPOCHS=10 \
+    TOTAL_EPOCHS='"$total_epochs"' \
     LORA_RANK=32 \
     LORA_ALPHA=32 \
     ENABLE_THINKING_DEFAULT=false \
     VERL_ENABLE_SGLANG=false \
     RESUME_MODE=disable \
+    EXPORT_FOR_INFERENCE='"$export_for_inference"' \
     PROJECT_NAME=atlas-v2-hyy-sft \
-    EXPERIMENT_NAME=qwen35-27b-r32-e10 \
+    EXPERIMENT_NAME='"$run_name"' \
     bash /workspace/training/scripts/run_verl_sft.sh
   '
