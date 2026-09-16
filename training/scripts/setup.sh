@@ -13,6 +13,13 @@
 # Podman-HPC may inherit a host virtual environment. The pinned uv project
 # environment below must take precedence for the Qwen3.5 runtime.
 unset VIRTUAL_ENV
+# The ARM64 image is built with the checkout's .venv active. That environment
+# can be an x86_64 venv from a previous host, so remove it from PATH before uv
+# chooses its Python interpreter.
+project_venv_bin=/workspace/verl/.venv/bin
+PATH="${PATH//$project_venv_bin:/}"
+PATH="${PATH//:$project_venv_bin/}"
+export PATH
 export VERL_ENABLE_SGLANG="${VERL_ENABLE_SGLANG:-true}"
 
 if [ ! -d /workspace/verl ]; then

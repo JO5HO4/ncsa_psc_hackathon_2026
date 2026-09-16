@@ -20,6 +20,7 @@ if [[ "$(uname -m)" == "aarch64" ]]; then
     --env HF_HOME=/hf_cache,HF_HUB_CACHE=/hf_cache/hub,HF_ASSETS_CACHE=/hf_cache/assets,HF_XET_CACHE=/hf_cache/xet,HF_HUB_DISABLE_XET=1,UV_CACHE_DIR=/uv_cache,TMPDIR=/tmp,VERL_ENABLE_SGLANG="$VERL_ENABLE_SGLANG" \
     --pwd /workspace \
     "$VERL_IMAGE_SIF" /bin/bash
+  return 0 2>/dev/null || exit 0
 fi
 
 SHM_SIZE="${SHM_SIZE:-16g}"
