@@ -5,7 +5,7 @@ unset VIRTUAL_ENV
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VERL_DIR="${VERL_DIR:-$REPO_ROOT/verl}"
 cd "$VERL_DIR"
-export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-/tmp/verl-venv}"
+export UV_PROJECT_ENVIRONMENT=/tmp/verl-venv
 
 source "$REPO_ROOT/training/scripts/qwen35_profile.sh"
 

@@ -48,11 +48,11 @@ apptainer exec --nv --cleanenv \
   --pwd /workspace \
   "$image_sif" /bin/bash -lc '
     source /workspace/training/scripts/setup.sh
-    uv run --frozen --extra fsdp python /workspace/training/prepare_atlas_v2_sft.py \
+    uv run --project /workspace/verl --no-sync --extra fsdp python /workspace/training/prepare_atlas_v2_sft.py \
       --source /workspace/data/datasets/atlas-open-data-sft-dataset/v2/candidates.jsonl \
       --split-manifest /workspace/data/datasets/atlas-open-data-sft-dataset/v2/split_manifest.json \
       --output-dir '"$atlas_dir"' --overwrite
-    uv run --frozen --extra fsdp python /workspace/training/compose_hyy_atlas_v2_sft.py \
+    uv run --project /workspace/verl --no-sync --extra fsdp python /workspace/training/compose_hyy_atlas_v2_sft.py \
       --hyy-dir /workspace/artifacts/datasets/hyy-sft \
       --atlas-dir '"$atlas_dir"' \
       --output-dir '"$mixed_dir"' --overwrite

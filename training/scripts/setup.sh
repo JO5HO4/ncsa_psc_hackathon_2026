@@ -46,7 +46,7 @@ uv_extras=(--extra fsdp)
 if [[ "$VERL_ENABLE_SGLANG" == "true" ]]; then
   uv_extras+=(--extra sglang)
 fi
-if ! uv sync --frozen "${uv_extras[@]}"; then
+if ! uv sync --frozen --python 3.12 "${uv_extras[@]}"; then
   echo "Failed to prepare the pinned VERL environment." >&2
   return 1 2>/dev/null || exit 1
 fi
