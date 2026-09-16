@@ -17,7 +17,9 @@
 
 set -euo pipefail
 
-repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# sbatch runs a spool-file copy, so BASH_SOURCE points under /var/spool. Keep
+# the submit directory as the repository root when Slurm provides it.
+repo="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cache_root="${DELTA_GH_CACHE_ROOT:-$repo/artifacts/delta-gh-cache}"
 run_name="${MIXED_SFT_RUN_NAME:-atlas-v2-hyy-27b-interactive-smoke}"
 checkpoint_root="${MIXED_SFT_CHECKPOINT_ROOT:-$repo/artifacts/checkpoints/$run_name}"
