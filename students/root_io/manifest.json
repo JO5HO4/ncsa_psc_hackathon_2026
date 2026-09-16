@@ -1,0 +1,18 @@
+{
+  "edition": "student-self-study-2026-09",
+  "records": 617,
+  "core_concepts": 182,
+  "practice_variants": 435,
+  "grouping": "First record per topic (excluding .b suffix) is core; this is not semantic deduplication.",
+  "difficulty": {
+    "introductory": 206,
+    "intermediate": 301,
+    "advanced": 110
+  },
+  "bank_sha256": "6d83c4ac8d8438ff99cb64c44de34ec4e4717a224671dc53399ea00f91af9fe0",
+  "workbook_sha256": "c025f8a5402533c3c2f84e81e6c5a67ea7711828fcd1b4203bf4edd6db0f47f7",
+  "duplicate_answer_groups": 54,
+  "duplicate_answer_groups_crossing_legacy_splits": 37,
+  "review": "Targeted editorial corrections; not independent expert certification. Machine-training review_status remains draft.",
+  "training": "Legacy splits are not certified leakage-free. Public workbook is not a held-out evaluation. No RL verifier provided."
+}

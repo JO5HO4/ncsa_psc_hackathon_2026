@@ -1,0 +1,12 @@
+{
+  "format_version": "qwen-root-command-chat-v1",
+  "source": "/global/cfs/cdirs/atlas/dwkim/agentic-ai-hep/ncsa_psc_hackathon_2026/data/datasets/atlas-open-data-sft-dataset/data/sft/validation.jsonl",
+  "source_sha256": "5a824b3723d581dafff5ab059f9e611c4354202762ff98fd75facbd72789ce69",
+  "output": "/global/cfs/cdirs/atlas/dwkim/agentic-ai-hep/ncsa_psc_hackathon_2026/data/derived/qwen-root-command-chat-v1/validation.jsonl",
+  "output_sha256": "f23d5e0251ff4fc30e8b85da8d1784dfbc414a6c76911d1c0f8e5e37803e73fa",
+  "records": 560,
+  "system_prompt": "Return exactly one executable ROOT command on one line. The entire response must begin with root -l -b -q -e ' and end with one matching single quote. Inside it, print exactly one RESULT=<value> line and call gSystem->Exit(0). Do not add Markdown, backticks, explanations, XML, JSON, tool calls, or any other text.",
+  "tools": "[]",
+  "enable_thinking": false,
+  "notes": "Questions and assistant command targets are byte-for-byte preserved from the canonical train split."
+}

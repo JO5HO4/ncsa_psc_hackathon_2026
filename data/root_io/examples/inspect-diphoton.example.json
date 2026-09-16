@@ -1,0 +1,99 @@
+{
+  "schema_version": "v0.1",
+  "id": "root_example_photon_schema",
+  "dataset_family": "root_io",
+  "task_type": "tree_schema",
+  "split": "train",
+  "user_request": "Inspect the analysis tree and summarize the photon-related variables in plain language.",
+  "fixture": {
+    "id": "synthetic-diphoton-example",
+    "path": "diphoton-example.root",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "source": "root_io/fixtures.py:create_example_fixture",
+    "revision": "schema-example-v0.1"
+  },
+  "allowed_tools": ["list_root_objects", "describe_tree"],
+  "trajectory": [
+    {
+      "role": "user",
+      "content": "Inspect the analysis tree and summarize the photon-related variables in plain language."
+    },
+    {
+      "role": "assistant",
+      "tool_call": {
+        "id": "call_objects_001",
+        "name": "list_root_objects",
+        "arguments": {"path": "diphoton-example.root"}
+      }
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_objects_001",
+      "result": {
+        "file": "diphoton-example.root",
+        "recursive": true,
+        "object_count": 2,
+        "returned_object_count": 2,
+        "truncated": false,
+        "objects": [
+          {"name": "analysis", "class_name": "TTree", "entries": 4},
+          {"name": "cutflow", "class_name": "TH1D", "dimensions": 1}
+        ]
+      }
+    },
+    {
+      "role": "assistant",
+      "tool_call": {
+        "id": "call_tree_001",
+        "name": "describe_tree",
+        "arguments": {
+          "path": "diphoton-example.root",
+          "tree": "analysis",
+          "patterns": ["photon_*"]
+        }
+      }
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_tree_001",
+      "result": {
+        "file": "diphoton-example.root",
+        "tree": "analysis",
+        "entries": 4,
+        "patterns": ["photon_*"],
+        "matching_branch_count": 3,
+        "returned_branch_count": 3,
+        "truncated": false,
+        "branches": [
+          {"name": "photon_n", "root_type": "int32_t", "interpretation": "AsDtype('>i4')"},
+          {"name": "photon_pt", "root_type": "double[]", "interpretation": "AsJagged(AsDtype('>f8'))"},
+          {"name": "photon_eta", "root_type": "double[]", "interpretation": "AsJagged(AsDtype('>f8'))"}
+        ]
+      }
+    },
+    {
+      "role": "assistant",
+      "content": "The file contains an analysis tree with four events and a one-dimensional cut-flow histogram. The photon-related branches are photon_n, a scalar count per event, and photon_pt and photon_eta, variable-length floating-point arrays holding one value per photon. The tool output establishes their structure but does not establish units, so no units are claimed."
+    }
+  ],
+  "expected": {
+    "required_facts": [
+      "The analysis tree has four entries.",
+      "photon_n is scalar while photon_pt and photon_eta are variable-length arrays.",
+      "No units are asserted from branch names alone."
+    ],
+    "forbidden_claims": [
+      "The tool output proves that photon_pt is measured in GeV.",
+      "The file contains real ATLAS collision data."
+    ],
+    "reference_answer": "The file contains an analysis tree with four events and a one-dimensional cut-flow histogram. The photon-related branches are photon_n, a scalar count per event, and photon_pt and photon_eta, variable-length floating-point arrays holding one value per photon. The tool output establishes their structure but does not establish units, so no units are claimed."
+  },
+  "metadata": {
+    "difficulty": "introductory",
+    "author": "Dongwon",
+    "reviewer": null,
+    "review_status": "draft",
+    "semantic_sources": [],
+    "notes": "Schema example only. Generate the fixture, replay calls, and replace the placeholder checksum before publication."
+  }
+}

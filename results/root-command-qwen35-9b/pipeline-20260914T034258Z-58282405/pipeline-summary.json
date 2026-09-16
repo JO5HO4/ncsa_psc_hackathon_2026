@@ -1,0 +1,20 @@
+{
+  "status": "completed",
+  "test_questions_per_model": 560,
+  "base": "/workspace/results/root-command-qwen35-9b/pipeline-20260914T034258Z-58282405/base",
+  "lora": "/workspace/results/root-command-qwen35-9b/pipeline-20260914T034258Z-58282405/lora",
+  "adapter": "/workspace/results/root-command-qwen35-9b/lr5e6-epoch3/checkpoints/global_step_840/huggingface/lora_adapter",
+  "root_execution_scoring": "completed",
+  "scores": {
+    "base": {
+      "passed": 0,
+      "failed": 560,
+      "accuracy": 0.0
+    },
+    "lora": {
+      "passed": 116,
+      "failed": 444,
+      "accuracy": 0.20714285714285716
+    }
+  }
+}

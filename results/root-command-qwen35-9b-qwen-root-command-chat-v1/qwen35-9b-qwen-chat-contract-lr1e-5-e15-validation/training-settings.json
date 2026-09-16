@@ -1,0 +1,22 @@
+{
+  "QWEN35_MODEL_SIZE": "9b",
+  "MODEL_PATH": "/hf_cache/hub/models--Qwen--Qwen3.5-9B/snapshots/c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+  "NPROC_PER_NODE": "4",
+  "TRAIN_FILE": "/workspace/results/root-command-qwen35-9b-qwen-root-command-chat-v1/qwen35-9b-qwen-chat-contract-lr1e-5-e15-validation/data/train.parquet",
+  "VAL_FILE": "/workspace/results/root-command-qwen35-9b-qwen-root-command-chat-v1/qwen35-9b-qwen-chat-contract-lr1e-5-e15-validation/data/validation.parquet",
+  "SAVE_DIR": "/workspace/results/root-command-qwen35-9b-qwen-root-command-chat-v1/qwen35-9b-qwen-chat-contract-lr1e-5-e15-validation/checkpoints",
+  "TOTAL_EPOCHS": "15",
+  "TRAIN_BATCH_SIZE": "16",
+  "MICRO_BATCH_SIZE_PER_GPU": "1",
+  "MAX_LENGTH": "2048",
+  "MAX_TOKEN_LEN_PER_GPU": "8192",
+  "LR": "1e-5",
+  "LORA_RANK": "16",
+  "LORA_ALPHA": "16",
+  "RESUME_MODE": "disable",
+  "SAVE_FREQ": "after_each_epoch",
+  "MAX_CKPT_TO_KEEP": "3",
+  "EXPORT_FOR_INFERENCE": "true",
+  "EXPERIMENT_NAME": "qwen35-9b-qwen-chat-contract-lr1e-5-e15-validation",
+  "TEST_FREQ": "after_each_epoch"
+}

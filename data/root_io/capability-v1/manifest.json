@@ -1,0 +1,27 @@
+{
+  "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+  "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+  "system_prompt": "You are a careful ROOT and high-energy-physics tutor. Answer the question clearly. State relevant assumptions and do not invent file contents, units, or analysis results.",
+  "temperature": 0,
+  "max_new_tokens": 1024,
+  "n": 10,
+  "purpose": "Pre-training code-generation diagnostic; not training data",
+  "files_sha256": {
+    "questions.jsonl": "bf8539dc485cf51bc858c5b2eecd1e04bdce8984a8630db12e6ed5c6d73eff8d",
+    "prompts.jsonl": "798d757e28f8bd168fbeb1561d2781c3c750f6b93f1b657ca9152989a9344200",
+    "sample_metadata.json": "43cade382564ca494eacfcf5924acab9a277451d1d0ced7197e50771b94b5367",
+    "fixture.root": "84eb3849e94f197ee77a1ec241cbda15519dc22f0d6aed97df04bd97b56555e4",
+    "incompatible.root": "c2e5f3196b843f9fddbbf8da4fbd14cdafc4ce232f9b9836e38346e6b7f34257"
+  },
+  "preparation_packages": {
+    "uproot": "5.6.3",
+    "awkward": "2.8.7",
+    "numpy": "1.26.4"
+  },
+  "limitations": [
+    "No tool access or execution of generated answers.",
+    "Questions differ from the earlier conceptual 50-question test.",
+    "Reference code and correctness grading are not yet implemented for this pack.",
+    "The same 1024-token cap may truncate a longer function."
+  ]
+}

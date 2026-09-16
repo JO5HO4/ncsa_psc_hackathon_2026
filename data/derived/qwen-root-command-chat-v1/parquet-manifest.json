@@ -1,0 +1,14 @@
+{
+  "format_version": "qwen-root-command-chat-v1",
+  "train": {
+    "records": 4480,
+    "jsonl_sha256": "646a5aa92ce3549a2d025fd214b6e35f7b37fb0c1625f57878a67aaa90bbc2fa",
+    "parquet": "train.parquet"
+  },
+  "validation": {
+    "records": 560,
+    "jsonl_sha256": "f23d5e0251ff4fc30e8b85da8d1784dfbc414a6c76911d1c0f8e5e37803e73fa",
+    "parquet": "validation.parquet"
+  },
+  "notes": "Derived from canonical ROOT-command splits; questions and assistant command targets are preserved."
+}

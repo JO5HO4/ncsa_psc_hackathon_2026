@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ROOT/HEP grounded question-answer record",
+  "type": "object",
+  "required": ["schema_version", "id", "question_kind", "topic", "difficulty", "split", "question", "answer", "required_facts", "provenance", "training_use", "rl_eligible", "split_group", "review_status"],
+  "properties": {
+    "schema_version": {"const": "v0.1"},
+    "id": {"type": "string", "pattern": "^root_knowledge_[0-9]{3}$"},
+    "question_kind": {"enum": ["grounded_knowledge", "contextual_analysis"]},
+    "topic": {"type": "string", "pattern": "^[a-z0-9_]+(?:\\.[a-z0-9_]+)+$"},
+    "difficulty": {"enum": ["introductory", "intermediate", "advanced"]},
+    "split": {"enum": ["train", "validation", "test"]},
+    "question": {"type": "string", "minLength": 15},
+    "context": {"type": "string", "minLength": 20},
+    "answer": {"type": "string", "minLength": 20},
+    "required_facts": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 5}},
+    "forbidden_claims": {"type": "array", "items": {"type": "string", "minLength": 5}},
+    "provenance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["title", "url"],
+        "properties": {"title": {"type": "string"}, "url": {"type": "string", "format": "uri"}},
+        "additionalProperties": false
+      }
+    },
+    "training_use": {"type": "array", "const": ["sft"]},
+    "rl_eligible": {"const": false},
+    "split_group": {"type": "string", "minLength": 1},
+    "review_status": {"enum": ["draft", "reviewed", "rejected"]}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"question_kind": {"const": "contextual_analysis"}}},
+      "then": {"required": ["context"]}
+    }
+  ],
+  "additionalProperties": false
+}

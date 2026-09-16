@@ -5,6 +5,12 @@ This directory contains the runnable training side of the hackathon. It uses
 
 ## What is ready now
 
+For ROOT/HEP knowledge post-training using `root_questions_617.jsonl`, see
+[root_sft/README.md](root_sft/README.md). It prepares topic-capped chat Parquet,
+conservative grouped splits, a Perlmutter GPU smoke/full job, and paired
+before/after evaluation using the existing verl SFT launcher. It does not
+replace the training framework. The GPU smoke job still needs to be run.
+
 `scripts/run_verl_sft.sh` runs SFT on the included `hep-config-sft` reference
 dataset by default. That dataset already has the `messages` and `tools` fields
 expected by verl; `verl_dataset.py` decodes its stored tool definitions.

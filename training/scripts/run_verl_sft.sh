@@ -86,7 +86,7 @@ if [[ "$EXPORT_FOR_INFERENCE" == "true" ]]; then
     echo "No checkpoint tracker found at $tracker; skipping inference export." >&2
     exit 1
   fi
-  read -r last_step < "$tracker"
+  last_step="$(< "$tracker")"
   if [[ ! "$last_step" =~ ^[0-9]+$ ]]; then
     echo "Invalid checkpoint step in $tracker: $last_step" >&2
     exit 1

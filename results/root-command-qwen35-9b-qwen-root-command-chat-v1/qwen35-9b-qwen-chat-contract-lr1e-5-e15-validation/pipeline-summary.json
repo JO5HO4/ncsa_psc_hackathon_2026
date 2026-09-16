@@ -1,0 +1,21 @@
+{
+  "status": "completed",
+  "eval_split": "validation",
+  "questions_per_model": 560,
+  "base": "/workspace/results/root-command-qwen35-9b-qwen-root-command-chat-v1/qwen35-9b-qwen-chat-contract-lr1e-5-e15-validation/base",
+  "lora": "/workspace/results/root-command-qwen35-9b-qwen-root-command-chat-v1/qwen35-9b-qwen-chat-contract-lr1e-5-e15-validation/lora",
+  "adapter": "/workspace/results/root-command-qwen35-9b-qwen-root-command-chat-v1/qwen35-9b-qwen-chat-contract-lr1e-5-e15-validation/checkpoints/global_step_4200/huggingface/lora_adapter",
+  "root_execution_scoring": "completed",
+  "scores": {
+    "base": {
+      "passed": 60,
+      "failed": 500,
+      "accuracy": 0.10714285714285714
+    },
+    "lora": {
+      "passed": 550,
+      "failed": 10,
+      "accuracy": 0.9821428571428571
+    }
+  }
+}

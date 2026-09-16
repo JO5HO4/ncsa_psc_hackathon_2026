@@ -1,0 +1,19 @@
+QWEN35_MODEL_SIZE=9b
+DATASET_PROFILE=qwen-root-command-chat-v1
+BASE_MODEL=Qwen/Qwen3.5-9B
+EVAL_SPLIT=validation
+BASE_REVISION=c202236235762e1c871ad0ccb60c8ee5ba337b9a
+NPROC_PER_NODE=4
+SOURCE_TRAIN_FILE=/workspace/data/derived/qwen-root-command-chat-v1/train.parquet
+SOURCE_VAL_FILE=/workspace/data/derived/qwen-root-command-chat-v1/validation.parquet
+SYSTEM_PROMPT=Return\ exactly\ one\ executable\ ROOT\ command\ on\ one\ line.\ The\ entire\ response\ must\ begin\ with\ root\ -l\ -b\ -q\ -e\ \'\ and\ end\ with\ one\ matching\ single\ quote.\ Inside\ it\,\ print\ exactly\ one\ RESULT=\<value\>\ line\ and\ call\ gSystem-\>Exit\(0\).\ Do\ not\ add\ Markdown\,\ backticks\,\ explanations\,\ XML\,\ JSON\,\ tool\ calls\,\ or\ any\ other\ text.
+LR=1e-5
+TOTAL_EPOCHS=15
+TRAIN_BATCH_SIZE=16
+MICRO_BATCH_SIZE_PER_GPU=1
+MAX_LENGTH=2048
+MAX_TOKEN_LEN_PER_GPU=8192
+LORA_RANK=16
+LORA_ALPHA=16
+MAX_CKPT_TO_KEEP=3
+RECOVERY_CHECKPOINT=''

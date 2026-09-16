@@ -1,0 +1,4 @@
+# Dataset preparation and checks only. GPU training dependencies remain owned by
+# the existing verl container and training/setup.sh; do not replace that stack.
+jsonschema>=4.18,<5
+pyarrow>=14

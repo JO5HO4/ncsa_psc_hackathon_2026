@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .venv/
+.venv-root-students/
 
 # Generated artifacts
 artifacts/
@@ -22,3 +23,7 @@ file1.root
 file2.root
 temp.root
 tmp.root
+data/trex_config/generated/
+data/trex_config/splits/
+data/root_io/generated/
+data/root_io/splits/

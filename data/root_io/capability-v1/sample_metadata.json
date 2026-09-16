@@ -1,0 +1,39 @@
+{
+  "sample_path": "data/samples/examples/Ntuple/tt_aMCNloP8.root",
+  "sample_sha256": "2f0c2923600f6f24de6983e2a09a2a292ddebacf05681f4d09d9361834889e5f",
+  "sample_objects": {
+    "nominal_Loose;1": "TTree"
+  },
+  "sample_trees": {
+    "nominal_Loose": {
+      "entries": 6632,
+      "types": {
+        "HT_all": "float",
+        "TTHClassBDTOutput_2017paper": "float",
+        "HF_SimpleClassification": "int32_t",
+        "nJets": "int32_t",
+        "nBTags_70": "int32_t",
+        "weight_jvt_DOWN": "float",
+        "weight_jvt_UP": "float",
+        "weight_pileup_DOWN": "float",
+        "weight_pileup_UP": "float",
+        "weight_mc": "float",
+        "weight_jvt": "float",
+        "weight_pileup": "float",
+        "weight_leptonSF": "float",
+        "weight_bTagSF_MV2c10_Continuous": "float",
+        "weight_normalise": "float"
+      }
+    }
+  },
+  "supplement": "fixture.root is synthetic, NOT content observed in the real sample.",
+  "fixture_types": {
+    "event": "int64",
+    "value": "float64",
+    "nItem": "int32",
+    "Item_x": "var * float64",
+    "Item_y": "var * float64"
+  },
+  "fixture_histogram": "h_values: TH1D, three visible bins",
+  "incompatible": "incompatible.root has Events with event:int64 and value:int32; fixture.root has value:float64"
+}

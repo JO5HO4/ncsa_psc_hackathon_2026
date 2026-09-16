@@ -1,0 +1,21 @@
+{
+  "status": "completed",
+  "eval_split": "validation",
+  "questions_per_model": 560,
+  "base": "/workspace/results/root-command-qwen35-9b/grid-58288690-row-1-lr1e-5-e3/base",
+  "lora": "/workspace/results/root-command-qwen35-9b/grid-58288690-row-1-lr1e-5-e3/lora",
+  "adapter": "/workspace/results/root-command-qwen35-9b/grid-58288690-row-1-lr1e-5-e3/checkpoints/global_step_840/huggingface/lora_adapter",
+  "root_execution_scoring": "completed",
+  "scores": {
+    "base": {
+      "passed": 0,
+      "failed": 560,
+      "accuracy": 0.0
+    },
+    "lora": {
+      "passed": 204,
+      "failed": 356,
+      "accuracy": 0.36428571428571427
+    }
+  }
+}

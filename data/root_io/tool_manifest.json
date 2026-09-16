@@ -1,0 +1,56 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "list_root_objects",
+      "description": "List ROOT objects and basic metadata without reading event payloads.",
+      "parameters": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": {"type": "string", "description": "Fixture-relative .root path"},
+          "recursive": {"type": "boolean", "default": true},
+          "max_objects": {"type": "integer", "minimum": 1, "maximum": 500, "default": 100}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "describe_tree",
+      "description": "Describe entries, branch names, ROOT types, and interpretations for a tree.",
+      "parameters": {
+        "type": "object",
+        "required": ["path", "tree"],
+        "properties": {
+          "path": {"type": "string", "description": "Fixture-relative .root path"},
+          "tree": {"type": "string", "minLength": 1, "maxLength": 256},
+          "patterns": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 256}, "default": ["*"]},
+          "max_branches": {"type": "integer", "minimum": 1, "maximum": 500, "default": 200}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "summarize_branch",
+      "description": "Read a bounded event prefix and summarize the flattened values of one branch.",
+      "parameters": {
+        "type": "object",
+        "required": ["path", "tree", "branch"],
+        "properties": {
+          "path": {"type": "string", "description": "Fixture-relative .root path"},
+          "tree": {"type": "string", "minLength": 1, "maxLength": 256},
+          "branch": {"type": "string", "minLength": 1, "maxLength": 256},
+          "max_entries": {"type": "integer", "minimum": 1, "maximum": 10000, "default": 1000},
+          "max_sample_values": {"type": "integer", "minimum": 0, "maximum": 10, "default": 5}
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+]

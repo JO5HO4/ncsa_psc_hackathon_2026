@@ -1,0 +1,4 @@
+awkward>=2.0
+jsonschema>=4.0
+numpy>=1.23
+uproot>=5.0

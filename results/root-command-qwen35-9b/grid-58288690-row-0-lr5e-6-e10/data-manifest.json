@@ -1,0 +1,11 @@
+{
+  "counts": {
+    "train": 4480,
+    "validation": 560,
+    "test": 560
+  },
+  "sha256": {
+    "train": "2d4c2273d11b32627cd8d69a037dff1314ec5e83a7448b7a4c45d2c79f902486",
+    "validation": "876a933eeec0b99a71df8897292dce980dda3b0f304a9662858661fe54ffaad6"
+  }
+}

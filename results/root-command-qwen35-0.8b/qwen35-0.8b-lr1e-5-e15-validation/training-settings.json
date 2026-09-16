@@ -1,0 +1,22 @@
+{
+  "QWEN35_MODEL_SIZE": "0.8b",
+  "MODEL_PATH": "/hf_cache/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "NPROC_PER_NODE": "1",
+  "TRAIN_FILE": "/workspace/results/root-command-qwen35-0.8b/qwen35-0.8b-lr1e-5-e15-validation/data/train.parquet",
+  "VAL_FILE": "/workspace/results/root-command-qwen35-0.8b/qwen35-0.8b-lr1e-5-e15-validation/data/validation.parquet",
+  "SAVE_DIR": "/workspace/results/root-command-qwen35-0.8b/qwen35-0.8b-lr1e-5-e15-validation/checkpoints",
+  "TOTAL_EPOCHS": "15",
+  "TRAIN_BATCH_SIZE": "16",
+  "MICRO_BATCH_SIZE_PER_GPU": "1",
+  "MAX_LENGTH": "2048",
+  "MAX_TOKEN_LEN_PER_GPU": "8192",
+  "LR": "1e-5",
+  "LORA_RANK": "16",
+  "LORA_ALPHA": "16",
+  "RESUME_MODE": "disable",
+  "SAVE_FREQ": "after_each_epoch",
+  "MAX_CKPT_TO_KEEP": "3",
+  "EXPORT_FOR_INFERENCE": "true",
+  "EXPERIMENT_NAME": "qwen35-0.8b-lr1e-5-e15-validation",
+  "TEST_FREQ": "after_each_epoch"
+}

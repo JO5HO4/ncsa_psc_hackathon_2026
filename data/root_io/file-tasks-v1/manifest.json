@@ -1,0 +1,61 @@
+{
+  "counts": {
+    "train": {
+      "inventory": 6,
+      "selection": 6,
+      "jagged": 6,
+      "histograms": 6,
+      "validation_streaming": 6,
+      "writing": 6
+    },
+    "validation": {
+      "inventory": 2,
+      "selection": 2,
+      "jagged": 2,
+      "histograms": 2,
+      "validation_streaming": 2,
+      "writing": 2
+    },
+    "test": {
+      "inventory": 2,
+      "selection": 2,
+      "jagged": 2,
+      "histograms": 2,
+      "validation_streaming": 2,
+      "writing": 2
+    }
+  },
+  "files_sha256": {
+    "train/fixture_3.root": "2f9532d705442a2499590e0f79f3e1bdce73e6e33632d7e3a84a28a1055566fb",
+    "train/fixture_1.root": "65fc324a5eb9ff267f19a5921e7b6d3c6105cdc73373c202488d671b2bcbb885",
+    "train/fixture_2.root": "051603ae134846755250948e1e146b6e2da4ed68351c0ab6e1de663a93717ea1",
+    "train/sft.jsonl": "19aa63191019ca3562e52ccd4ddb685a6e4fbe30db527aa7ba07a6de3541c71b",
+    "train/references.jsonl": "73185f8ad51c6425620de9019601ea110963e033af073035b64cb91e673435c3",
+    "train/sft.parquet": "ac292191c313c94bd442ca53f0ac8f1b28c3932f32eb23b1c90bdd1ea1b4ffc5",
+    "train/prompts.jsonl": "b642da50b63dbb0d76de0f549398f5bf26d8333cd4af766009dc8862516e3e5b",
+    "test/sft.jsonl": "d2b0806329fd32245a2b2526f03e3a8e4afff33981c48e4b03137d90509e7ad6",
+    "test/fixture_11.root": "c05a4797d0fb14ea3b690920973c918a619a8899e7ef75bb43e2a791868ac3c2",
+    "test/references.jsonl": "9aed8b27941cf658468aa6d36a4cac98f4f6f6146c0dc8579171b9a62fa4965d",
+    "test/sft.parquet": "3d2f354d59f8fc142729a5bd9ea3539045847fcb562d38f7bcebbd8b6ee2ff1f",
+    "test/prompts.jsonl": "6b988743d0f30c87a9761ec7f8c8930bbd64cd9c66297d14ee53dc2d4b748459",
+    "validation/fixture_7.root": "594284f05b4f3b86d4ad0e27dcef446b3d68ffd140d6dcb987a5e1adbdf6c45a",
+    "validation/sft.jsonl": "cc9647af623bb6d5ee48e51e7f3f729c16a6e7f1395ef38c06aac91638e45d68",
+    "validation/references.jsonl": "9510013b2e180f240bc4c370dcd2aacd33749ddfa81d9f5859e0801d9058b8e6",
+    "validation/sft.parquet": "75eaf38566f99e873b7fc47bee42bf2764ff37412af4d727c0dc1b6b1749f38a",
+    "validation/prompts.jsonl": "e1814b347478873296c62e0bec2347d6bc24186a2d7b3792861f29ed4e908a41"
+  },
+  "reference_checks_passed": 60,
+  "distinct_operations": 12,
+  "fixture_groups": 5,
+  "system_prompt": "Return one JSON object calling the documented ROOT operation. No prose, code fences or predicted results.",
+  "versions": {
+    "uproot": "5.6.3",
+    "awkward": "2.8.7",
+    "numpy": "1.26.4"
+  },
+  "limitations": [
+    "Template-related tasks across independent fixture groups; not 60 independent skills.",
+    "Same operation families across splits; measures schema/argument transfer, not unseen algorithms.",
+    "Single-operation plans with provided schemas, not open-ended code or autonomous exploration."
+  ]
+}
