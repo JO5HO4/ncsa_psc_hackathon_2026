@@ -46,7 +46,13 @@ uv_extras=(--extra fsdp)
 if [[ "$VERL_ENABLE_SGLANG" == "true" ]]; then
   uv_extras+=(--extra sglang)
 fi
-if ! uv sync --frozen --python 3.12 "${uv_extras[@]}"; then
+# An interrupted sync can leave an incomplete Ray wheel in the shared
+# environment. Repair just that package when its public API cannot load.
+uv_reinstall=()
+if ! "$UV_PROJECT_ENVIRONMENT/bin/python" -c 'import ray; assert hasattr(ray, "remote")' >/dev/null 2>&1; then
+  uv_reinstall+=(--reinstall-package ray)
+fi
+if ! uv sync --frozen --python 3.12 "${uv_extras[@]}" "${uv_reinstall[@]}"; then
   echo "Failed to prepare the pinned VERL environment." >&2
   return 1 2>/dev/null || exit 1
 fi

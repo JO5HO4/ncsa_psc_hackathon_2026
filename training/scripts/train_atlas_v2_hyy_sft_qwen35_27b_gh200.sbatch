@@ -47,6 +47,7 @@ apptainer exec --nv --cleanenv \
   --env HF_HOME=/hf_cache,HF_HUB_CACHE=/hf_cache/hub,HF_ASSETS_CACHE=/hf_cache/assets,HF_XET_CACHE=/hf_cache/xet,HF_HUB_DISABLE_XET=1,UV_CACHE_DIR=/uv_cache,TMPDIR=/tmp,VERL_ENABLE_SGLANG=false \
   --pwd /workspace \
   "$image_sif" /bin/bash -lc '
+    set -euo pipefail
     source /workspace/training/scripts/setup.sh
     uv run --project /workspace/verl --no-sync --extra fsdp python /workspace/training/prepare_atlas_v2_sft.py \
       --source /workspace/data/datasets/atlas-open-data-sft-dataset/v2/candidates.jsonl \

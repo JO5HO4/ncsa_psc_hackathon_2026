@@ -27,17 +27,23 @@ def decode(value: object, field: str, identifier: str) -> list[object]:
         value = json.loads(value)
     if not isinstance(value, list):
         raise ValueError(f"{identifier}: {field} must be a list")
-    return value
+    # Hyy's Arrow JSON extension materializes each message as a JSON string;
+    # ATLAS records already materialize them as dictionaries.
+    return [json.loads(item) if isinstance(item, str) else item for item in value]
 
 
 def load(path: Path, source: str) -> list[dict[str, object]]:
-    columns = ["id", "messages", "tools"]
+    field_names = set(pq.read_schema(path).names)
+    identifier_field = "id" if "id" in field_names else "uuid" if "uuid" in field_names else None
+    if identifier_field is None:
+        raise ValueError(f"{path}: expected an id or uuid field")
+    columns = [identifier_field, "messages", "tools"]
     rows = pq.read_table(path, columns=columns).to_pylist()
     rendered: list[dict[str, object]] = []
     for number, row in enumerate(rows, 1):
-        identifier = row.get("id")
+        identifier = row.get(identifier_field)
         if not isinstance(identifier, str) or not identifier:
-            raise ValueError(f"{path}:{number}: missing id")
+            raise ValueError(f"{path}:{number}: missing {identifier_field}")
         messages = decode(row.get("messages"), "messages", identifier)
         tools = decode(row.get("tools"), "tools", identifier)
         if not any(turn.get("role") == "assistant" for turn in messages if isinstance(turn, dict)):
