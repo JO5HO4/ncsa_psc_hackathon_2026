@@ -163,6 +163,27 @@ the resolved path for a pinned model revision or local snapshot. Both models
 are multimodal, but the current SFT records are text-only, so no image fields
 are required. The launchers use BF16 by default.
 
+### Concurrent V2 and Hyy SFT
+
+The V2 command corpus and the public
+[`cxyang-ucb/hyy-sft`](https://huggingface.co/datasets/cxyang-ucb/hyy-sft)
+tool-use corpus train as independent 9B LoRA jobs. The Hyy launcher downloads
+its pinned Parquet revision and verifies the published SHA-256 for its 130
+training and 39 validation trajectories. It uses a 32K context window and
+disables thinking to match the dataset's native Qwen Code trajectory format.
+
+Queue both jobs at once from a login node:
+
+```bash
+bash training/scripts/submit_atlas_v2_and_hyy_sft.sh
+```
+
+The jobs share the read-mostly Hugging Face model cache but use separate UV
+caches, container temporary directories, data directories, logs, and
+checkpoints. Slurm may start them at different times if eight GPUs are not
+available together. To launch either independently, submit
+`train_atlas_v2_qwen35_9b.sbatch` or `train_hyy_sft_qwen35_9b.sbatch`.
+
 `TRAIN_FILE` and `VAL_FILE` must be absolute paths once inside the container,
 or paths relative to the local `verl/` checkout.
 

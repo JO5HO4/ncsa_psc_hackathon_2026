@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Submit from the repository root:
-#   sbatch training/scripts/train_atlas_v2_qwen35_9b.sbatch
+#   sbatch training/scripts/train_hyy_sft_qwen35_9b.sbatch
 #
-# Four-GPU Qwen3.5-9B LoRA SFT on the V2 ROOT-command training split.
-# The final launcher step exports the adapter needed by inference/run_prompts.py.
+# Four-GPU Qwen3.5-9B LoRA SFT on the pinned Hyy native-tool trajectories.
+# The Hyy corpus is downloaded with checksums before the container starts.
+# Its tool-use conversations require a larger context window than V2.
 #SBATCH --account=atlas
 #SBATCH --qos=regular
 #SBATCH --nodes=1
@@ -12,8 +13,8 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --constraint=gpu
 #SBATCH --time=04:00:00
-#SBATCH --output=/global/cfs/cdirs/atlas/joshua/ncsa_psc_hackathon_2026/artifacts/slurm/atlas-v2-qwen35-9b-%j.out
-#SBATCH --error=/global/cfs/cdirs/atlas/joshua/ncsa_psc_hackathon_2026/artifacts/slurm/atlas-v2-qwen35-9b-%j.err
+#SBATCH --output=/global/cfs/cdirs/atlas/joshua/ncsa_psc_hackathon_2026/artifacts/slurm/hyy-sft-qwen35-9b-%j.out
+#SBATCH --error=/global/cfs/cdirs/atlas/joshua/ncsa_psc_hackathon_2026/artifacts/slurm/hyy-sft-qwen35-9b-%j.err
 
 set -euo pipefail
 
@@ -21,11 +22,13 @@ repo=/global/cfs/cdirs/atlas/joshua/ncsa_psc_hackathon_2026
 image="${VERL_IMAGE:-docker.io/verlai/verl@sha256:26b2b1de89333cfbddbf639be5f0ab9d2dbaed19ee5b4892765f59617671e915}"
 cache_root="${PSCRATCH:-$repo/artifacts/hf_cache}"
 hf_cache="$cache_root/qwen35-hf-cache"
-uv_cache="$cache_root/qwen35-atlas-v2-uv-cache"
-container_tmp="$cache_root/qwen35-atlas-v2-container-tmp"
-save_dir=/workspace/artifacts/checkpoints/atlas-v2-qwen35-9b-r32-e10
+uv_cache="$cache_root/qwen35-hyy-uv-cache"
+container_tmp="$cache_root/qwen35-hyy-container-tmp"
+dataset_dir="$repo/artifacts/datasets/hyy-sft"
+save_dir=/workspace/artifacts/checkpoints/hyy-sft-qwen35-9b-r32-e10
 
 mkdir -p "$repo/artifacts/slurm" "$hf_cache" "$uv_cache" "$container_tmp"
+python3 "$repo/training/fetch_hyy_sft.py" --output-dir "$dataset_dir"
 
 podman-hpc run --rm --gpu --ipc=host --entrypoint= \
   -v "$repo":/workspace \
@@ -42,26 +45,22 @@ podman-hpc run --rm --gpu --ipc=host --entrypoint= \
   -w /workspace \
   "$image" /bin/bash -lc '
     source /workspace/training/scripts/setup.sh
-    uv run --frozen --extra fsdp --extra sglang python /workspace/training/prepare_atlas_v2_sft.py \
-      --source /workspace/data/datasets/atlas-open-data-sft-dataset/v2/candidates.jsonl \
-      --split-manifest /workspace/data/datasets/atlas-open-data-sft-dataset/v2/split_manifest.json \
-      --output-dir /workspace/artifacts/datasets/atlas-open-data-sft-v2 \
-      --overwrite
     QWEN35_MODEL_SIZE=9b \
     NPROC_PER_NODE=4 \
-    TRAIN_FILE=/workspace/artifacts/datasets/atlas-open-data-sft-v2/train.parquet \
-    VAL_FILE=/workspace/artifacts/datasets/atlas-open-data-sft-v2/validation.parquet \
+    TRAIN_FILE=/workspace/artifacts/datasets/hyy-sft/train.parquet \
+    VAL_FILE=/workspace/artifacts/datasets/hyy-sft/validation.parquet \
     SAVE_DIR='"$save_dir"' \
-    TRAIN_BATCH_SIZE=16 \
+    TRAIN_BATCH_SIZE=4 \
     MICRO_BATCH_SIZE_PER_GPU=1 \
-    MAX_LENGTH=2048 \
-    MAX_TOKEN_LEN_PER_GPU=8192 \
+    MAX_LENGTH=32768 \
+    MAX_TOKEN_LEN_PER_GPU=32768 \
     LR=1e-5 \
     TOTAL_EPOCHS=10 \
     LORA_RANK=32 \
     LORA_ALPHA=32 \
+    ENABLE_THINKING_DEFAULT=false \
     RESUME_MODE=disable \
-    PROJECT_NAME=atlas-open-data-sft-v2 \
+    PROJECT_NAME=hyy-sft \
     EXPERIMENT_NAME=qwen35-9b-r32-e10 \
     bash /workspace/training/scripts/run_verl_sft.sh
   '

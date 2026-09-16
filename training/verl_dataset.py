@@ -20,6 +20,8 @@ class TReXConfigSFTDataset(MultiTurnSFTDataset):
     def decode_tools(value):
         if isinstance(value, str):
             value = json.loads(value)
+        else:
+            value = convert_nested_value_to_list_recursive(value)
         if not isinstance(value, list):
             raise TypeError(
                 "The tools column must contain a JSON array or Python list; "

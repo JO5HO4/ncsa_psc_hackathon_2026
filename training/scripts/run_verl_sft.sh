@@ -43,6 +43,12 @@ EXPORT_FOR_INFERENCE="${EXPORT_FOR_INFERENCE:-true}"
 MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
 ENGINE_MODEL_DTYPE="${ENGINE_MODEL_DTYPE:-bf16}"
 ENGINE_USE_TORCH_COMPILE="${ENGINE_USE_TORCH_COMPILE:-true}"
+ENABLE_THINKING_DEFAULT="${ENABLE_THINKING_DEFAULT:-}"
+
+thinking_args=()
+if [[ -n "$ENABLE_THINKING_DEFAULT" ]]; then
+  thinking_args+=(data.enable_thinking_default="$ENABLE_THINKING_DEFAULT")
+fi
 
 uv run --frozen --extra fsdp --extra sglang torchrun --standalone --nnodes=1 --nproc_per_node="$NPROC_PER_NODE" --master_addr="$MASTER_ADDR" \
   -m verl.trainer.sft_trainer \
@@ -59,6 +65,7 @@ uv run --frozen --extra fsdp --extra sglang torchrun --standalone --nnodes=1 --n
   data.truncation=error \
   data.ignore_input_ids_mismatch=True \
   data.num_workers=2 \
+  "${thinking_args[@]}" \
   optim.lr="$LR" \
   engine=fsdp \
   engine.model_dtype="$ENGINE_MODEL_DTYPE" \
