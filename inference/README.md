@@ -285,3 +285,20 @@ not give the model access to that evaluator or to TRExFitter.
 Set `EXPORT_FOR_INFERENCE=false` when launching training only if you explicitly
 want to skip the final conversion. In that case run
 `export_verl_checkpoint.sh` before inference.
+
+### Delta-GH mixed V2 + Hyy 27B smoke checkpoint
+
+The completed two-GH200 interactive smoke run is evaluated by a normal
+one-GPU `ghx4` batch job. It exports the two-rank FSDP LoRA checkpoint, scores
+the eight-task query benchmark, and writes 158 V2 held-out command completions
+for later ROOT execution scoring:
+
+```bash
+sbatch inference/run_atlas_v2_hyy_27b_gh200.sbatch
+```
+
+Its immediate query score is written to
+`artifacts/inference/atlas-v2-hyy-27b-interactive-smoke/query-score.json`.
+Delta-GH does not mount the ATLAS CVMFS ROOT runtime, so execute
+`v2-test-catalog.jsonl` through the existing V2 ROOT scorer on a
+ROOT-capable node to obtain the 158-command execution success rate.
