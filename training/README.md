@@ -184,6 +184,24 @@ checkpoints. Slurm may start them at different times if eight GPUs are not
 available together. To launch either independently, submit
 `train_atlas_v2_qwen35_9b.sbatch` or `train_hyy_sft_qwen35_9b.sbatch`.
 
+### Qwen3.5-27B on two H100s
+
+Use the dedicated two-GPU H100 launchers for the 27B model. Each job requests
+two H100s, runs two FSDP ranks, and writes separate 27B checkpoints. Queue
+both datasets together only when four H100s are available:
+
+```bash
+bash training/scripts/submit_atlas_v2_and_hyy_sft_27b_h100.sh
+```
+
+The Hyy launcher defaults to one 32K-token trajectory per GPU. If its memory
+use exceeds the available H100 memory, lower the limits for that job:
+
+```bash
+sbatch --export=ALL,HYY_SFT_MAX_LENGTH=16384,HYY_SFT_MAX_TOKEN_LEN_PER_GPU=16384 \
+  training/scripts/train_hyy_sft_qwen35_27b_h100.sbatch
+```
+
 `TRAIN_FILE` and `VAL_FILE` must be absolute paths once inside the container,
 or paths relative to the local `verl/` checkout.
 

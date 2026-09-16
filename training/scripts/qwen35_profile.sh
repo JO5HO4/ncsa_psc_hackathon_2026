@@ -15,8 +15,13 @@ case "$QWEN35_MODEL_SIZE" in
     QWEN35_PROFILE_NAME="qwen35-9b"
     QWEN35_DEFAULT_GPUS=4
     ;;
+  27b)
+    QWEN35_MODEL_PATH="Qwen/Qwen3.5-27B"
+    QWEN35_PROFILE_NAME="qwen35-27b"
+    QWEN35_DEFAULT_GPUS=2
+    ;;
   *)
-    echo "Unsupported QWEN35_MODEL_SIZE=$QWEN35_MODEL_SIZE. Use 0.8b or 9b." >&2
+    echo "Unsupported QWEN35_MODEL_SIZE=$QWEN35_MODEL_SIZE. Use 0.8b, 9b, or 27b." >&2
     return 2 2>/dev/null || exit 2
     ;;
 esac
