@@ -109,6 +109,8 @@ completion set.
 | [trex_fitter/](trex_fitter/) | The code that checks and runs configs |
 | [training/](training/README.md) | Training with verl |
 | [inference/](inference/README.md) | Testing a trained model |
+| [docs/REPOSITORY_LAYOUT.md](docs/REPOSITORY_LAYOUT.md) | Repository layout and artifact-retention policy |
+| [docs/MODEL_REGISTRY.md](docs/MODEL_REGISTRY.md) | Published LoRA adapters and their loading contract |
 | [docs/ATLAS_WORKFLOW.md](docs/ATLAS_WORKFLOW.md) | Reproduce the ATLAS command benchmark |
 | [docs/](docs/HACKATHON.md) | The plan and task list |
 

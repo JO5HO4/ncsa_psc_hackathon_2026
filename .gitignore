@@ -22,3 +22,11 @@ file1.root
 file2.root
 temp.root
 tmp.root
+
+# Keep independently cloned model-hub repositories outside this worktree.
+hep-chat-entrypoint/
+hep-posttraining/
+
+# Host-side tool caches are scratch-only runtime state.
+.pytest_cache/
+.ruff_cache/
